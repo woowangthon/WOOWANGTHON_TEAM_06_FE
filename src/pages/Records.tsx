@@ -17,6 +17,9 @@ export default function Records({ onOpenDoc }: { onOpenDoc: (id: number, quote?:
     api.cohorts().then(setCohorts).catch(() => {})
   }
   useEffect(load, [])
+  const notify = useToast()
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState({ title: '', event_name: '', occurred_on: '', body: '' })
   const [q, setQ] = useState('')
   const [cohortF, setCohortF] = useState(0)
   const [typeF, setTypeF] = useState('')
@@ -30,6 +33,26 @@ export default function Records({ onOpenDoc }: { onOpenDoc: (id: number, quote?:
     ;(m[k] ||= []).push(r)
     return m
   }, {})
+
+  const startEdit = () => {
+    if (!detail) return
+    setDraft({ title: detail.title, event_name: detail.event_name, occurred_on: detail.occurred_on, body: detail.body })
+    setEditing(true)
+  }
+  const saveEdit = async () => {
+    if (!detail) return
+    try {
+      const r = await api.updateRecord(detail.id, draft)
+      setDetail(r); setEditing(false); load(); notify('기록을 수정했다.')
+    } catch (e) { setError((e as Error).message) }
+  }
+  const remove = async () => {
+    if (!detail || !window.confirm(`"${detail.title}" 기록을 삭제한다. 여기서 뽑은 일정과 이 일정에 남긴 결정도 함께 지워지고 되돌릴 수 없다.`)) return
+    try {
+      await api.deleteRecord(detail.id)
+      setDetail(null); load(); notify('기록을 삭제했다.')
+    } catch (e) { setError((e as Error).message) }
+  }
 
   const ordered = Object.entries(groups).sort((a, b) => b[1][0].occurred_on.localeCompare(a[1][0].occurred_on))
 
@@ -58,7 +81,7 @@ export default function Records({ onOpenDoc }: { onOpenDoc: (id: number, quote?:
               <h3>{k}</h3>
               {rs.map((r) => (
                 <button key={r.id} className={`item ${r.type === 'lesson' ? 'lesson' : ''} ${detail?.id === r.id ? 'on' : ''}`}
-                  onClick={() => api.record(r.id).then(setDetail)}>
+                  onClick={() => { setEditing(false); api.record(r.id).then(setDetail) }}>
                   <span className="d">{r.occurred_on}</span>{r.title}
                 </button>
               ))}
@@ -68,10 +91,32 @@ export default function Records({ onOpenDoc }: { onOpenDoc: (id: number, quote?:
         <div>
           {detail ? (
             <article className="sheet">
-              <p className="tags">{detail.occurred_on} · {TYPE_LABEL[detail.type]} · {detail.event_name}</p>
-              <h2>{detail.title}</h2>
-              <p className="body">{detail.body}</p>
-              <div className="actions"><button className="btn primary" onClick={() => onOpenDoc(detail.id)}>{detail.has_pdf ? '원본 문서 보기' : '크게 보기'}</button></div>
+              {editing ? (
+                <div className="form" style={{ marginTop: 0 }}>
+                  <input aria-label="제목" name="title" value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} />
+                  <div className="row">
+                    <input className="grow" aria-label="행사명" name="event_name" placeholder="행사명" value={draft.event_name} onChange={(e) => setDraft({ ...draft, event_name: e.target.value })} />
+                    <input type="date" aria-label="날짜" name="occurred_on" value={draft.occurred_on} onChange={(e) => setDraft({ ...draft, occurred_on: e.target.value })} />
+                  </div>
+                  <p className="muted">날짜를 바꾸면 이 기록에서 뽑은 일정도 같은 만큼 옮겨진다.</p>
+                  <textarea rows={12} aria-label="본문" name="body" value={draft.body} onChange={(e) => setDraft({ ...draft, body: e.target.value })} />
+                  <div className="row">
+                    <button className="btn primary" onClick={saveEdit}>수정 저장</button>
+                    <button className="btn" onClick={() => setEditing(false)}>취소</button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <p className="tags">{detail.occurred_on} · {TYPE_LABEL[detail.type]} · {detail.event_name}</p>
+                  <h2>{detail.title}</h2>
+                  <p className="body">{detail.body}</p>
+                  <div className="actions">
+                    <button className="btn primary" onClick={() => onOpenDoc(detail.id)}>{detail.has_pdf ? '원본 문서 보기' : '크게 보기'}</button>
+                    <button className="btn" onClick={startEdit}>수정</button>
+                    <button className="btn danger" onClick={remove}>삭제</button>
+                  </div>
+                </>
+              )}
             </article>
           ) : (
             <p className="empty">왼쪽에서 기록을 고르면 원문이 여기에 열린다.</p>

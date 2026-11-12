@@ -55,6 +55,9 @@ async function upload(form: FormData) {
 
 export const api = {
   upload,
+  updateRecord: (id: number, b: Partial<Pick<SeniorRecord, 'title' | 'event_name' | 'occurred_on' | 'body'>>) =>
+    call<SeniorRecord>(`/api/records/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
+  deleteRecord: (id: number) => call<{ deleted: number }>(`/api/records/${id}`, { method: 'DELETE' }),
   decisions: () => call<DecisionRow[]>('/api/decisions'),
   lastYear: (date: string, windowDays = 14) => call<LastYear>(`/api/timeline/last-year?date=${date}&window_days=${windowDays}`),
   ask: (question: string) => post<AskResult>('/api/ask', { question }),
