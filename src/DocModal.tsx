@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { api, BASE, type SeniorRecord } from './api'
+import { api, fetchPdf, type SeniorRecord } from './api'
 
 type Props = { id: number; quote?: string; onClose: () => void }
 
@@ -7,12 +7,20 @@ export default function DocModal({ id, quote, onClose }: Props) {
   const [rec, setRec] = useState<SeniorRecord | null>(null)
   const [tab, setTab] = useState<'pdf' | 'text'>('text')
   const [error, setError] = useState('')
+  const [pdfUrl, setPdfUrl] = useState('')
   const closeRef = useRef<HTMLButtonElement>(null)
   const markRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
     api.record(id).then((r) => { setRec(r); setTab(r.has_pdf && !quote ? 'pdf' : 'text') }).catch((e) => setError(e.message))
   }, [id, quote])
+
+  useEffect(() => {
+    if (!rec?.has_pdf) return
+    let url = ''
+    fetchPdf(rec.id).then((u) => { url = u; setPdfUrl(u) }).catch((e) => setError(e.message))
+    return () => { if (url) URL.revokeObjectURL(url) }
+  }, [rec])
 
   useEffect(() => {
     closeRef.current?.focus()
@@ -47,7 +55,7 @@ export default function DocModal({ id, quote, onClose }: Props) {
         </header>
         <div className="modal-body">
           {error && <p className="error" role="alert">{error}</p>}
-          {rec && tab === 'pdf' && <iframe title={rec.title} src={`${BASE}/api/records/${rec.id}/pdf#view=FitH`} />}
+          {rec && tab === 'pdf' && (pdfUrl ? <iframe title={rec.title} src={`${pdfUrl}#view=FitH`} /> : !error && <p className="empty">원본 문서를 불러오는 중…</p>)}
           {rec && tab === 'text' && (
             <div className="text-view">
               {!rec.has_pdf && <p className="notice" style={{ marginTop: 0 }}>이 문서는 원본 파일을 화면에 띄울 수 없어서 추출한 텍스트로 보여준다.</p>}

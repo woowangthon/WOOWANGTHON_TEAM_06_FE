@@ -123,3 +123,8 @@ mark { background: linear-gradient(transparent 38%, var(--mark) 38%); color: inh
 .drop:hover, .drop:focus-within { border-color: var(--accent); color: var(--ink); }
 .drop input { display: block; margin-top: 10px; }
 .muted { color: var(--ink-2); font-size: .88rem; }
+
+.gate { max-width: 460px; padding-top: 18vh; }
+.gate .brand { font-size: 2rem; margin-bottom: 14px; }
+.gate form { display: flex; gap: 10px; margin-top: 18px; }
+.gate input { flex: 1; }

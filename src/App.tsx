@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { api, setKey, Unauthorized } from './api'
 import LastYear from './pages/LastYear'
 import Ask from './pages/Ask'
 import Records from './pages/Records'
@@ -13,7 +14,26 @@ type Tab = (typeof TABS)[number][0]
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('last')
+  const [locked, setLocked] = useState(false)
+  const [keyInput, setKeyInput] = useState('')
   const [doc, setDoc] = useState<{ id: number; quote?: string } | null>(null)
+  useEffect(() => {
+    api.cohorts().catch((e) => e instanceof Unauthorized && setLocked(true))
+  }, [])
+
+  if (locked) {
+    return (
+      <main className="gate">
+        <h1 className="brand">졸업하지 않는 선배</h1>
+        <p>접근 키를 입력하세요. 키는 제출 안내에 적혀 있다.</p>
+        <form onSubmit={(e) => { e.preventDefault(); setKey(keyInput.trim()); location.reload() }}>
+          <input type="password" name="access-key" aria-label="접근 키" autoComplete="off" autoFocus value={keyInput} onChange={(e) => setKeyInput(e.target.value)} />
+          <button className="btn primary" type="submit">들어가기</button>
+        </form>
+      </main>
+    )
+  }
+
   const openDoc = (id: number, quote?: string) => setDoc({ id, quote })
 
   return (
