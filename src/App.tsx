@@ -21,6 +21,7 @@ export default function App() {
 
   return (
     <>
+      <a className="skip" href="#main">본문으로 건너뛰기</a>
       <header className="top">
         <div className="top-in">
           <h1 className="brand">졸업하지 않는 선배</h1>
@@ -34,7 +35,7 @@ export default function App() {
           </nav>
         </div>
       </header>
-      <main>
+      <main id="main">
         {tab === 'last' && <LastYear onOpenRecord={showRecord} />}
         {tab === 'ask' && <Ask onOpenRecord={showRecord} />}
         {tab === 'records' && <Records openId={openRecord} onClose={() => setOpenRecord(null)} />}

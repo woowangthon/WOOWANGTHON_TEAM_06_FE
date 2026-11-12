@@ -22,9 +22,9 @@ export default function Ask({ onOpenRecord }: { onOpenRecord: (id: number) => vo
     <section>
       <h2 className="ask-h">지난 기수 기록에서<br />찾아서 알려줄게</h2>
       <div className="ask-box">
-        <input placeholder="예: MT 때 시간이 왜 밀렸어?" aria-label="질문" value={q}
+        <input placeholder="예: MT 때 시간이 왜 밀렸어?" aria-label="질문" name="question" autoComplete="off" enterKeyHint="search" value={q}
           onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} />
-        <button className="btn primary" onClick={() => submit()} disabled={busy}>{busy ? '찾는 중' : '묻기'}</button>
+        <button className="btn primary" onClick={() => submit()} disabled={busy}>{busy ? '찾는 중…' : '묻기'}</button>
       </div>
       <div className="chips">
         {EXAMPLES.map((x) => <button key={x} className="chip" onClick={() => submit(x)}>{x}</button>)}

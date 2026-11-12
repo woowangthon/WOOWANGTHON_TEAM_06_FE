@@ -29,7 +29,7 @@ export default function LastYear({ onOpenRecord }: { onOpenRecord: (id: number) 
           {data && <small>앞뒤 {data.window_days}일</small>}
         </h2>
         <label className="picker">
-          오늘로 볼 날짜 <input type="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} />
+          오늘로 볼 날짜 <input type="date" name="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} />
         </label>
         {data && <Ribbon center={data.center} windowDays={data.window_days} records={records} onPick={setDate} />}
       </div>
@@ -75,7 +75,7 @@ function Ribbon({ center, windowDays, records, onPick }: {
           )
         })}
       </div>
-      <p className="ribbon-note">{year}년 월별 기록 수. 파란 달이 지금 보는 시기임.</p>
+      <p className="ribbon-note">{year}년 월별 기록 수. 파란 달이 지금 보는 시기다.</p>
     </div>
   )
 }
@@ -91,7 +91,7 @@ function Entry({ c, open, onToggle, onOpenRecord, onSaved }: {
   const save = async () => {
     try {
       await api.addDecision(c.id, body, reason)
-      setBody(''); setReason(''); onSaved()
+      setBody(''); setReason(''); setErr(''); onSaved()
     } catch (e) { setErr((e as Error).message) }
   }
 
@@ -106,7 +106,7 @@ function Entry({ c, open, onToggle, onOpenRecord, onSaved }: {
         <p className="tags">{c.cohort_name}{c.event_name ? ` · ${c.event_name}` : ''}</p>
         {c.note && <p style={{ marginTop: 8 }}>{c.note}</p>}
         {c.lessons.map((l) => (
-          <p key={l.id} className="margin-note"><b>그때 남긴 교훈</b>{l.body.slice(0, 260)}</p>
+          <p key={l.id} className="margin-note"><b>그때 남긴 교훈</b>{l.body.length > 260 ? l.body.slice(0, 260) + "…" : l.body}</p>
         ))}
         {c.decisions.map((x) => (
           <p key={x.id} className="stamp"><b>그해 결정</b>{x.body} (이유: {x.reason})</p>
@@ -117,8 +117,8 @@ function Entry({ c, open, onToggle, onOpenRecord, onSaved }: {
         </div>
         {open && (
           <div className="form">
-            <input placeholder="올해는 어떻게 할지" aria-label="올해 결정" value={body} onChange={(e) => setBody(e.target.value)} />
-            <input placeholder="이유" aria-label="결정 이유" value={reason} onChange={(e) => setReason(e.target.value)} />
+            <input placeholder="올해는 어떻게 할지" aria-label="올해 결정" name="decision" autoComplete="off" value={body} onChange={(e) => setBody(e.target.value)} />
+            <input placeholder="이유" aria-label="결정 이유" name="reason" autoComplete="off" value={reason} onChange={(e) => setReason(e.target.value)} />
             <div className="row"><button className="btn primary" onClick={save}>결정 저장</button></div>
             {err && <p className="error" role="alert">{err}</p>}
           </div>

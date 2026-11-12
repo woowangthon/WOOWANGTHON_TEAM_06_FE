@@ -82,20 +82,20 @@ function AddForm({ cohorts, onSaved }: { cohorts: Cohort[]; onSaved: () => void 
       <summary>기록 등록</summary>
       <div className="form">
         <div className="row">
-          <select value={f.cohort_id} onChange={(e) => set('cohort_id', +e.target.value)}>
+          <select aria-label="기수" name="cohort" value={f.cohort_id} onChange={(e) => set('cohort_id', +e.target.value)}>
             {cohorts.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
-          <select value={f.type} onChange={(e) => set('type', e.target.value)}>
+          <select aria-label="문서 종류" name="type" value={f.type} onChange={(e) => set('type', e.target.value)}>
             {TYPES.map((t) => <option key={t} value={t}>{TYPE_LABEL[t]}</option>)}
           </select>
-          <input type="date" value={f.occurred_on} onChange={(e) => set('occurred_on', e.target.value)} />
+          <input type="date" aria-label="문서 날짜" name="occurred_on" value={f.occurred_on} onChange={(e) => set('occurred_on', e.target.value)} />
         </div>
-        <input placeholder="제목" value={f.title} onChange={(e) => set('title', e.target.value)} />
-        <input placeholder="행사명 (예: 봄 축제 부스)" value={f.event_name} onChange={(e) => set('event_name', e.target.value)} />
-        <textarea rows={5} placeholder="본문 (날짜는 2025-05-02 형식으로 적으면 일정으로 뽑힌다)" value={f.body}
+        <input placeholder="제목" aria-label="제목" name="title" autoComplete="off" value={f.title} onChange={(e) => set('title', e.target.value)} />
+        <input placeholder="행사명 (예: 봄 축제 부스)" aria-label="행사명" name="event_name" autoComplete="off" value={f.event_name} onChange={(e) => set('event_name', e.target.value)} />
+        <textarea rows={5} aria-label="본문" name="body" placeholder="본문 (날짜는 2025-05-02 형식으로 적으면 일정으로 뽑힌다)" value={f.body}
           onChange={(e) => set('body', e.target.value)} />
         <button className="btn primary" onClick={save}>저장하고 일정 뽑기</button>
-        {msg && <p className="notice">{msg}</p>}
+        {msg && <p className="notice" role="status">{msg}</p>}
       </div>
     </details>
   )
@@ -132,21 +132,21 @@ function InterviewBox({ cohorts, state, setState, onSaved }: {
       <div className="form">
         {!state && (
           <div className="row">
-            <select value={cid} onChange={(e) => setCohort(+e.target.value)}>
+            <select aria-label="기수" name="cohort" value={cid} onChange={(e) => setCohort(+e.target.value)}>
               {cohorts.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
-            <input className="grow" placeholder="인터뷰할 행사명 (예: 송년회)" value={event} onChange={(e) => setEvent(e.target.value)} />
+            <input className="grow" aria-label="인터뷰할 행사명" name="event" autoComplete="off" placeholder="인터뷰할 행사명 (예: 송년회)" value={event} onChange={(e) => setEvent(e.target.value)} />
             <button className="btn primary" onClick={start}>인터뷰 시작</button>
           </div>
         )}
         {state && (
           <>
             <p className="lead">{state.question}</p>
-            <textarea rows={3} value={answer} onChange={(e) => setAnswer(e.target.value)} />
+            <textarea rows={3} aria-label="답변" name="answer" value={answer} onChange={(e) => setAnswer(e.target.value)} />
             <button className="btn primary" onClick={send}>답하고 다음 질문</button>
           </>
         )}
-        {msg && <p className="notice">{msg}</p>}
+        {msg && <p className="notice" role="status">{msg}</p>}
       </div>
     </details>
   )
