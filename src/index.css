@@ -77,7 +77,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 .chip { border: 1.5px solid var(--rule); background: var(--sheet); border-radius: 999px; padding: 5px 14px; cursor: pointer; font-size: .9rem; color: var(--ink-2); }
 .chip:hover { border-color: var(--accent); color: var(--accent); }
 .answer { margin-top: 36px; }
-.lead { font-family: var(--serif); font-size: 1.25rem; font-weight: 600; line-height: 1.5; }
+.lead { white-space: pre-wrap; font-family: var(--serif); font-size: 1.25rem; font-weight: 600; line-height: 1.5; }
 .src { margin-top: 22px; border-top: 1px solid var(--rule); padding-top: 14px; }
 .src-meta { color: var(--ink-2); font-size: .88rem; }
 .quote { font-family: var(--serif); margin-top: 6px; white-space: pre-wrap; }
@@ -118,3 +118,8 @@ mark { background: linear-gradient(transparent 38%, var(--mark) 38%); color: inh
 .seg button { border: 0; background: none; padding: 6px 16px; cursor: pointer; font-size: .92rem; }
 .seg button.on { background: var(--ink); color: #fff; font-weight: 700; }
 @media (max-width: 760px) { .backdrop { padding: 0; } .modal { border-radius: 0; } }
+
+.drop { display: block; border: 2px dashed var(--rule); border-radius: 12px; padding: 18px 20px; cursor: pointer; color: var(--ink-2); background: var(--paper); }
+.drop:hover, .drop:focus-within { border-color: var(--accent); color: var(--ink); }
+.drop input { display: block; margin-top: 10px; }
+.muted { color: var(--ink-2); font-size: .88rem; }

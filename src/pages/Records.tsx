@@ -60,36 +60,57 @@ export default function Records({ onOpenDoc }: { onOpenDoc: (id: number, quote?:
 
 function AddForm({ cohorts, onSaved }: { cohorts: Cohort[]; onSaved: () => void }) {
   const [f, setF] = useState({ cohort_id: 0, type: 'meeting', title: '', body: '', event_name: '', occurred_on: '' })
+  const [file, setFile] = useState<File | null>(null)
   const [msg, setMsg] = useState('')
+  const [busy, setBusy] = useState(false)
   const set = (k: string, v: string | number) => setF({ ...f, [k]: v })
+  const cohort = f.cohort_id || cohorts[cohorts.length - 1]?.id
 
   const save = async () => {
-    setMsg('')
+    setMsg(''); setBusy(true)
     try {
-      const r = await api.addRecord({ ...f, cohort_id: f.cohort_id || cohorts[cohorts.length - 1]?.id })
-      setMsg(`저장했다. 일정 항목 ${r.timeline_items.length}개를 뽑았다${r.extraction === 'failed' ? ' (추출 실패: 기록만 저장)' : ''}.`)
-      setF({ ...f, title: '', body: '' }); onSaved()
+      let r
+      if (file) {
+        const fd = new FormData()
+        fd.set('file', file); fd.set('cohort_id', String(cohort)); fd.set('type', f.type)
+        fd.set('event_name', f.event_name); fd.set('title', f.title)
+        if (f.occurred_on) fd.set('occurred_on', f.occurred_on)
+        r = await api.upload(fd)
+      } else {
+        r = await api.addRecord({ ...f, cohort_id: cohort })
+      }
+      setMsg(`저장했다. ${r.record.occurred_on} 기록에서 일정 항목 ${r.timeline_items.length}개를 뽑았다${r.extraction === 'failed' ? ' (추출 실패: 기록만 저장)' : ''}.`)
+      setF({ ...f, title: '', body: '' }); setFile(null); onSaved()
     } catch (e) { setMsg((e as Error).message) }
+    setBusy(false)
   }
 
   return (
     <details className="panel">
       <summary>기록 등록</summary>
       <div className="form">
+        <label className="drop">
+          <span>{file ? `선택한 파일: ${file.name}` : '파일을 올리면 글자를 읽어 기록으로 저장한다 (PDF, 한글 hwp·hwpx, docx, txt)'}</span>
+          <input type="file" name="file" accept=".pdf,.hwp,.hwpx,.docx,.txt,.md"
+            onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+        </label>
         <div className="row">
-          <select aria-label="기수" name="cohort" value={f.cohort_id} onChange={(e) => set('cohort_id', +e.target.value)}>
+          <select aria-label="기수" name="cohort" value={cohort} onChange={(e) => set('cohort_id', +e.target.value)}>
             {cohorts.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
           <select aria-label="문서 종류" name="type" value={f.type} onChange={(e) => set('type', e.target.value)}>
             {TYPES.map((t) => <option key={t} value={t}>{TYPE_LABEL[t]}</option>)}
           </select>
           <input type="date" aria-label="문서 날짜" name="occurred_on" value={f.occurred_on} onChange={(e) => set('occurred_on', e.target.value)} />
+          {file && <span className="muted">날짜를 비우면 문서에서 찾는다</span>}
         </div>
-        <input placeholder="제목" aria-label="제목" name="title" autoComplete="off" value={f.title} onChange={(e) => set('title', e.target.value)} />
-        <input placeholder="행사명 (예: 봄 축제 부스)" aria-label="행사명" name="event_name" autoComplete="off" value={f.event_name} onChange={(e) => set('event_name', e.target.value)} />
-        <textarea rows={5} aria-label="본문" name="body" placeholder="본문 (날짜는 2025-05-02 형식으로 적으면 일정으로 뽑힌다)" value={f.body}
-          onChange={(e) => set('body', e.target.value)} />
-        <button className="btn primary" onClick={save}>저장하고 일정 뽑기</button>
+        <input placeholder={file ? '제목 (비우면 파일 이름)' : '제목'} aria-label="제목" name="title" autoComplete="off" value={f.title} onChange={(e) => set('title', e.target.value)} />
+        <input placeholder="행사명 (예: 정기총회)" aria-label="행사명" name="event_name" autoComplete="off" value={f.event_name} onChange={(e) => set('event_name', e.target.value)} />
+        {!file && (
+          <textarea rows={5} aria-label="본문" name="body" placeholder="파일 대신 본문을 직접 붙여 넣어도 된다. 날짜는 2025-05-02 형식으로 적는다." value={f.body}
+            onChange={(e) => set('body', e.target.value)} />
+        )}
+        <div className="row"><button className="btn primary" onClick={save} disabled={busy}>{busy ? '읽는 중…' : '저장하고 일정 뽑기'}</button></div>
         {msg && <p className="notice" role="status">{msg}</p>}
       </div>
     </details>

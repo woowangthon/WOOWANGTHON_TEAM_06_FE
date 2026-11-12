@@ -27,7 +27,15 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
 
 const post = <T>(path: string, body: unknown) => call<T>(path, { method: 'POST', body: JSON.stringify(body) })
 
+async function upload(form: FormData) {
+  const res = await fetch(BASE + '/api/records/upload', { method: 'POST', body: form })
+  const j = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(j.detail ?? `업로드 실패 (${res.status})`)
+  return j as { record: SeniorRecord; timeline_items: unknown[]; extraction: string }
+}
+
 export const api = {
+  upload,
   lastYear: (date: string, windowDays = 14) => call<LastYear>(`/api/timeline/last-year?date=${date}&window_days=${windowDays}`),
   ask: (question: string) => post<AskResult>('/api/ask', { question }),
   cohorts: () => call<Cohort[]>('/api/cohorts'),

@@ -16,7 +16,7 @@ export default function Ask({ onOpenRecord }: { onOpenRecord: (id: number, quote
     setBusy(false)
   }
 
-  const lead = res && (res.sources.length ? res.answer.split('\n')[0] : res.answer)
+  const lead = res && (res.answer.startsWith('기록에는 이렇게') ? res.answer.split('\n')[0] : res.answer)
 
   return (
     <section>
