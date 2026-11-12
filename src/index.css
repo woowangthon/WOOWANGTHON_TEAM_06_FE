@@ -1,0 +1,28 @@
+:root { --ink:#1b1f2a; --muted:#5b6475; --line:#d9dde6; --bg:#f6f7fb; --card:#fff; --brand:#2b4bd6; font-size: 18px; }
+@media (prefers-color-scheme: dark) { :root { --ink:#eef0f6; --muted:#a3abbd; --line:#323850; --bg:#14172a; --card:#1d2138; --brand:#8ea2ff; } }
+* { box-sizing: border-box; }
+body { margin:0; font-family: -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; background:var(--bg); color:var(--ink); line-height:1.6; }
+.top { padding:16px 24px 0; max-width:900px; margin:0 auto; }
+.top h1 { margin:0 0 12px; font-size:1.6rem; }
+nav { display:flex; gap:8px; border-bottom:2px solid var(--line); }
+nav button { border:0; background:none; font-size:1.05rem; padding:10px 16px; cursor:pointer; color:var(--muted); border-bottom:3px solid transparent; margin-bottom:-2px; }
+nav button.on { color:var(--brand); border-bottom-color:var(--brand); font-weight:700; }
+main { max-width:900px; margin:0 auto; padding:16px 24px 64px; }
+.card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 20px; margin:14px 0; }
+.card h2 { margin:4px 0 8px; font-size:1.25rem; }
+.meta, .muted { color:var(--muted); font-size:.9rem; }
+.row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:10px 0; }
+.grow { flex:1; min-width:200px; }
+.form { display:flex; flex-direction:column; gap:10px; margin-top:12px; }
+input, select, textarea, button { font:inherit; padding:9px 12px; border:1px solid var(--line); border-radius:8px; background:var(--card); color:var(--ink); }
+button { cursor:pointer; }
+button.primary { background:var(--brand); border-color:var(--brand); color:#fff; font-weight:600; }
+button:disabled { opacity:.6; cursor:wait; }
+button.link { border:0; background:none; padding:0; color:var(--brand); text-decoration:underline; text-align:left; }
+.lesson { background:#fff7e0; color:#5a4300; border-radius:8px; padding:8px 12px; margin:8px 0; }
+.decision { background:#e6f7ec; color:#12502a; border-radius:8px; padding:8px 12px; margin:8px 0; }
+.error { color:#c0261e; } .notice { color:var(--muted); background:var(--card); border:1px dashed var(--line); padding:8px 12px; border-radius:8px; }
+.answer, .pre { white-space:pre-wrap; font-size:1.05rem; }
+.source { border-left:3px solid var(--line); padding-left:12px; margin:10px 0; }
+summary { cursor:pointer; font-weight:700; font-size:1.1rem; }
+.item { margin:6px 0; }
