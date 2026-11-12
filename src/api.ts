@@ -1,4 +1,4 @@
-const BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8000'
+export const BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8000'
 
 export type Lesson = { id: number; title: string; body: string; occurred_on: string }
 export type Decision = { id: number; body: string; reason: string; decided_on: string }
@@ -13,6 +13,7 @@ export type AskResult = { answer: string; sources: Source[] }
 export type Cohort = { id: number; name: string; year: number }
 export type SeniorRecord = {
   id: number; cohort_id: number; type: string; title: string; body: string; event_name: string; occurred_on: string
+  has_pdf?: boolean
 }
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
@@ -32,7 +33,7 @@ export const api = {
   cohorts: () => call<Cohort[]>('/api/cohorts'),
   records: () => call<SeniorRecord[]>('/api/records'),
   record: (id: number) => call<SeniorRecord>(`/api/records/${id}`),
-  addRecord: (b: Omit<SeniorRecord, 'id'>) =>
+  addRecord: (b: Omit<SeniorRecord, 'id' | 'has_pdf'>) =>
     post<{ record: SeniorRecord; timeline_items: unknown[]; extraction: string }>('/api/records', b),
   interviewNext: (cohort_id: number, event_name: string) =>
     post<{ question: string | null; done: boolean }>('/api/interviews/next', { cohort_id, event_name }),

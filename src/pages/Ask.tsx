@@ -3,7 +3,7 @@ import { api, type AskResult } from '../api'
 
 const EXAMPLES = ['MT 때 시간이 왜 밀렸어?', '정기총회는 어떻게 준비했어?', 'LT 레크는 뭘 했어?']
 
-export default function Ask({ onOpenRecord }: { onOpenRecord: (id: number) => void }) {
+export default function Ask({ onOpenRecord }: { onOpenRecord: (id: number, quote?: string) => void }) {
   const [q, setQ] = useState('')
   const [res, setRes] = useState<AskResult | null>(null)
   const [error, setError] = useState('')
@@ -36,7 +36,7 @@ export default function Ask({ onOpenRecord }: { onOpenRecord: (id: number) => vo
           {res.sources.map((s) => (
             <div key={s.record_id} className="src">
               <p className="src-meta">
-                근거 기록 · <button className="link" onClick={() => onOpenRecord(s.record_id)}>{s.occurred_on} {s.title}</button>
+                근거 기록 · <button className="link" onClick={() => onOpenRecord(s.record_id, s.quote)}>{s.occurred_on} {s.title}</button>
               </p>
               <p className="quote"><mark>{s.quote}</mark></p>
             </div>

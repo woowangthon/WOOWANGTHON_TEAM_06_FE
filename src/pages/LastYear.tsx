@@ -4,7 +4,7 @@ import { api, type Card, type LastYear as Data, type SeniorRecord } from '../api
 const today = () => new Date().toISOString().slice(0, 10)
 const WEEK = ['일', '월', '화', '수', '목', '금', '토']
 
-export default function LastYear({ onOpenRecord }: { onOpenRecord: (id: number) => void }) {
+export default function LastYear({ onOpenRecord }: { onOpenRecord: (id: number, quote?: string) => void }) {
   const [date, setDate] = useState(today())
   const [data, setData] = useState<Data | null>(null)
   const [records, setRecords] = useState<SeniorRecord[]>([])
@@ -81,7 +81,7 @@ function Ribbon({ center, windowDays, records, onPick }: {
 }
 
 function Entry({ c, open, onToggle, onOpenRecord, onSaved }: {
-  c: Card; open: boolean; onToggle: () => void; onOpenRecord: (id: number) => void; onSaved: () => void
+  c: Card; open: boolean; onToggle: () => void; onOpenRecord: (id: number, quote?: string) => void; onSaved: () => void
 }) {
   const [body, setBody] = useState('')
   const [reason, setReason] = useState('')

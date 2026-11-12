@@ -4,7 +4,7 @@ import { api, type Cohort, type SeniorRecord } from '../api'
 const TYPES = ['meeting', 'event'] as const
 const TYPE_LABEL: Record<string, string> = { meeting: '회의록', event: '행사 문서', lesson: '교훈', decision: '결정' }
 
-export default function Records({ openId, onClose }: { openId: number | null; onClose: () => void }) {
+export default function Records({ onOpenDoc }: { onOpenDoc: (id: number, quote?: string) => void }) {
   const [list, setList] = useState<SeniorRecord[]>([])
   const [cohorts, setCohorts] = useState<Cohort[]>([])
   const [detail, setDetail] = useState<SeniorRecord | null>(null)
@@ -16,11 +16,6 @@ export default function Records({ openId, onClose }: { openId: number | null; on
     api.cohorts().then(setCohorts).catch(() => {})
   }
   useEffect(load, [])
-  useEffect(() => {
-    if (openId) api.record(openId).then(setDetail).catch((e) => setError(e.message))
-    else setDetail(null)
-  }, [openId])
-
   const groups = list.reduce<Record<string, SeniorRecord[]>>((m, r) => {
     const k = `${cohorts.find((c) => c.id === r.cohort_id)?.name ?? ''} · ${r.event_name || '기타'}`
     ;(m[k] ||= []).push(r)
@@ -52,7 +47,7 @@ export default function Records({ openId, onClose }: { openId: number | null; on
               <p className="tags">{detail.occurred_on} · {TYPE_LABEL[detail.type]} · {detail.event_name}</p>
               <h2>{detail.title}</h2>
               <p className="body">{detail.body}</p>
-              <div className="actions"><button className="btn" onClick={() => { setDetail(null); onClose() }}>닫기</button></div>
+              <div className="actions"><button className="btn primary" onClick={() => onOpenDoc(detail.id)}>{detail.has_pdf ? '원본 문서 보기' : '크게 보기'}</button></div>
             </article>
           ) : (
             <p className="empty">왼쪽에서 기록을 고르면 원문이 여기에 열린다.</p>

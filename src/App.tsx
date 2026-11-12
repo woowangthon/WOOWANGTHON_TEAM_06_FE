@@ -2,6 +2,7 @@ import { useState } from 'react'
 import LastYear from './pages/LastYear'
 import Ask from './pages/Ask'
 import Records from './pages/Records'
+import DocModal from './DocModal'
 
 const TABS = [
   ['last', '작년 이맘때'],
@@ -12,12 +13,8 @@ type Tab = (typeof TABS)[number][0]
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('last')
-  const [openRecord, setOpenRecord] = useState<number | null>(null)
-
-  const showRecord = (id: number) => {
-    setOpenRecord(id)
-    setTab('records')
-  }
+  const [doc, setDoc] = useState<{ id: number; quote?: string } | null>(null)
+  const openDoc = (id: number, quote?: string) => setDoc({ id, quote })
 
   return (
     <>
@@ -36,10 +33,11 @@ export default function App() {
         </div>
       </header>
       <main id="main">
-        {tab === 'last' && <LastYear onOpenRecord={showRecord} />}
-        {tab === 'ask' && <Ask onOpenRecord={showRecord} />}
-        {tab === 'records' && <Records openId={openRecord} onClose={() => setOpenRecord(null)} />}
+        {tab === 'last' && <LastYear onOpenRecord={openDoc} />}
+        {tab === 'ask' && <Ask onOpenRecord={openDoc} />}
+        {tab === 'records' && <Records onOpenDoc={openDoc} />}
       </main>
+      {doc && <DocModal id={doc.id} quote={doc.quote} onClose={() => setDoc(null)} />}
     </>
   )
 }
