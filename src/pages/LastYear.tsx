@@ -151,10 +151,14 @@ function Entry({ g, open, onToggle, onOpenRecord, onSaved }: {
             </li>
           ))}
         </ul>
-        {lessons.map((l) => (
-          <p key={l.id} className="margin-note"><b>그때 남긴 교훈 · {l.title}</b>{l.body.length > 260 ? l.body.slice(0, 260) + '…' : l.body}
-            {' '}<button className="link" onClick={() => onOpenRecord(l.id)}>원문</button></p>
-        ))}
+        {lessons.map((l) =>
+          l.body.length > 300 ? (
+            <p key={l.id} className="margin-note"><b>그때 남긴 평가 기록</b>
+              <button className="link" onClick={() => onOpenRecord(l.id)}>{l.title}</button> 평가회의에서 나온 후기와 개선점이 담겨 있다.
+            </p>
+          ) : (
+            <p key={l.id} className="margin-note"><b>그때 남긴 교훈 · {l.title}</b>{l.body}</p>
+          ))}
         {g.lessons.length > 2 && (
           <button className="link" onClick={() => setAllLessons(!allLessons)}>{allLessons ? '교훈 접기' : `교훈 ${g.lessons.length - 2}건 더 보기`}</button>
         )}

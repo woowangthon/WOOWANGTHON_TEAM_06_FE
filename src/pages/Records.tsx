@@ -31,6 +31,8 @@ export default function Records({ onOpenDoc }: { onOpenDoc: (id: number, quote?:
     return m
   }, {})
 
+  const ordered = Object.entries(groups).sort((a, b) => b[1][0].occurred_on.localeCompare(a[1][0].occurred_on))
+
   return (
     <section>
       {error && <p className="error" role="alert">{error}</p>}
@@ -51,7 +53,7 @@ export default function Records({ onOpenDoc }: { onOpenDoc: (id: number, quote?:
       <div className="records">
         <div className="list">
           {shown.length === 0 && <p className="empty">조건에 맞는 기록이 없다.</p>}
-          {Object.entries(groups).map(([k, rs]) => (
+          {ordered.map(([k, rs]) => (
             <div key={k}>
               <h3>{k}</h3>
               {rs.map((r) => (
