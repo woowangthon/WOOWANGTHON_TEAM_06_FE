@@ -7,6 +7,10 @@ export type Card = {
   record_id: number; cohort_id: number; cohort_name: string; event_name: string; record_title: string
   lessons: Lesson[]; decisions: Decision[]
 }
+export type DecisionRow = Decision & {
+  cohort_id: number; timeline_item_id: number; item_title: string; item_done_on: string
+  event_name: string; record_id: number; cohort_name: string
+}
 export type LastYear = { center: string; window_days: number; notice: string; cards: Card[] }
 export type Source = { record_id: number; title: string; quote: string; occurred_on: string }
 export type AskResult = { answer: string; sources: Source[] }
@@ -51,6 +55,7 @@ async function upload(form: FormData) {
 
 export const api = {
   upload,
+  decisions: () => call<DecisionRow[]>('/api/decisions'),
   lastYear: (date: string, windowDays = 14) => call<LastYear>(`/api/timeline/last-year?date=${date}&window_days=${windowDays}`),
   ask: (question: string) => post<AskResult>('/api/ask', { question }),
   cohorts: () => call<Cohort[]>('/api/cohorts'),

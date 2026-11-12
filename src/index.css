@@ -128,3 +128,21 @@ mark { background: linear-gradient(transparent 38%, var(--mark) 38%); color: inh
 .gate .brand { font-size: 2rem; margin-bottom: 14px; }
 .gate form { display: flex; gap: 10px; margin-top: 18px; }
 .gate input { flex: 1; }
+
+/* stats, docs, toast, skeleton, filters */
+.stats { display: flex; gap: 22px; margin: 10px 0 0; }
+.stats div { text-align: right; }
+.stats dt { color: var(--ink-2); font-size: .8rem; }
+.stats dd { margin: 0; font-family: var(--serif); font-weight: 800; font-size: 1.5rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.docs { list-style: none; padding: 0; margin: 10px 0 0; font-size: .95rem; }
+.docs li { padding: 3px 0; }
+.year { font-family: var(--serif); font-size: 1.1rem; }
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 30; pointer-events: none; }
+.toast span { display: block; background: var(--ink); color: #fff; padding: 11px 20px; border-radius: 999px; font-size: .95rem; box-shadow: 0 10px 30px -10px rgba(0, 0, 0, .5); animation: pop .2s ease-out; }
+@keyframes pop { from { opacity: 0; transform: translateY(8px); } }
+.skeleton i { display: block; height: 70px; border-radius: 10px; margin-top: 18px; background: linear-gradient(90deg, var(--rule), #e5e9f1, var(--rule)); background-size: 200% 100%; animation: shimmer 1.2s infinite linear; }
+@keyframes shimmer { to { background-position: -200% 0; } }
+.filters { display: flex; gap: 10px; flex-wrap: wrap; margin: 6px 0 16px; align-items: center; }
+.filters input[type=search] { flex: 1; min-width: 200px; }
+.progress { color: var(--ink-2); font-size: .9rem; }
+.recent { margin-top: 18px; }

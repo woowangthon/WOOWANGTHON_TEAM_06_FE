@@ -1,24 +1,48 @@
 import { useEffect, useMemo, useState } from 'react'
-import { api, type Card, type LastYear as Data, type SeniorRecord } from '../api'
+import { api, type Card, type Decision, type DecisionRow, type Lesson, type LastYear as Data, type SeniorRecord } from '../api'
+import { useToast } from '../toast'
 
 const today = () => new Date().toISOString().slice(0, 10)
 const WEEK = ['일', '월', '화', '수', '목', '금', '토']
+const md = (iso: string) => `${+iso.slice(5, 7)}.${iso.slice(8, 10)}`
+
+type Group = { key: string; event: string; cohort: string; cards: Card[]; lessons: Lesson[]; decisions: Decision[] }
+
+function group(cards: Card[]): Group[] {
+  const m = new Map<string, Group>()
+  for (const c of cards) {
+    const key = `${c.cohort_id}|${c.event_name || c.record_title}`
+    const g = m.get(key) ?? { key, event: c.event_name || c.record_title, cohort: c.cohort_name, cards: [], lessons: [], decisions: [] }
+    g.cards.push(c)
+    c.lessons.forEach((l) => g.lessons.some((x) => x.id === l.id) || g.lessons.push(l))
+    c.decisions.forEach((d) => g.decisions.some((x) => x.id === d.id) || g.decisions.push(d))
+    m.set(key, g)
+  }
+  return [...m.values()]
+}
 
 export default function LastYear({ onOpenRecord }: { onOpenRecord: (id: number, quote?: string) => void }) {
   const [date, setDate] = useState(today())
   const [data, setData] = useState<Data | null>(null)
   const [records, setRecords] = useState<SeniorRecord[]>([])
+  const [decisions, setDecisions] = useState<DecisionRow[]>([])
   const [error, setError] = useState('')
-  const [deciding, setDeciding] = useState<number | null>(null)
+  const [deciding, setDeciding] = useState<string | null>(null)
+  const notify = useToast()
 
   const load = () => {
     setError('')
     api.lastYear(date).then(setData).catch((e) => setError(e.message))
   }
   useEffect(load, [date])
-  useEffect(() => { api.records().then(setRecords).catch(() => {}) }, [])
+  useEffect(() => {
+    api.records().then(setRecords).catch(() => {})
+    api.decisions().then(setDecisions).catch(() => {})
+  }, [])
 
+  const groups = useMemo(() => (data ? group(data.cards) : []), [data])
   const c = data ? new Date(data.center + 'T00:00:00') : null
+  const events = new Set(records.map((r) => r.event_name).filter(Boolean)).size
 
   return (
     <section>
@@ -28,19 +52,29 @@ export default function LastYear({ onOpenRecord }: { onOpenRecord: (id: number, 
           {c ? `${c.getFullYear()}년 ${c.getMonth() + 1}월 ${c.getDate()}일` : '…'}
           {data && <small>앞뒤 {data.window_days}일</small>}
         </h2>
-        <label className="picker">
-          오늘로 볼 날짜 <input type="date" name="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} />
-        </label>
+        <div className="row" style={{ justifyContent: 'space-between' }}>
+          <label className="picker">
+            오늘로 볼 날짜 <input type="date" name="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} />
+          </label>
+          <dl className="stats" aria-label="쌓인 기록">
+            <div><dt>기록</dt><dd>{records.length}</dd></div>
+            <div><dt>행사</dt><dd>{events}</dd></div>
+            <div><dt>교훈</dt><dd>{records.filter((r) => r.type === 'lesson').length}</dd></div>
+            <div><dt>결정</dt><dd>{decisions.length}</dd></div>
+          </dl>
+        </div>
         {data && <Ribbon center={data.center} windowDays={data.window_days} records={records} onPick={setDate} />}
       </div>
 
       {error && <p className="error" role="alert">{error}</p>}
+      {!data && !error && <div className="skeleton" aria-hidden="true"><i /><i /><i /></div>}
       {data?.notice && <p className="notice">{data.notice}</p>}
       <ol className="timeline">
-        {data?.cards.map((card) => (
-          <Entry key={card.id} c={card} open={deciding === card.id}
-            onToggle={() => setDeciding(deciding === card.id ? null : card.id)}
-            onOpenRecord={onOpenRecord} onSaved={() => { setDeciding(null); load() }} />
+        {groups.map((g) => (
+          <Entry key={g.key} g={g} open={deciding === g.key}
+            onToggle={() => setDeciding(deciding === g.key ? null : g.key)}
+            onOpenRecord={onOpenRecord}
+            onSaved={() => { setDeciding(null); load(); api.decisions().then(setDecisions).catch(() => {}); notify('결정을 남겼다. 다음 기수가 이 카드에서 볼 수 있다.') }} />
         ))}
       </ol>
     </section>
@@ -75,22 +109,26 @@ function Ribbon({ center, windowDays, records, onPick }: {
           )
         })}
       </div>
-      <p className="ribbon-note">{year}년 월별 기록 수. 파란 달이 지금 보는 시기다.</p>
+      <p className="ribbon-note">{year}년 월별 기록 수. 파란 달이 지금 보는 시기다. 달을 누르면 그 시기로 간다.</p>
     </div>
   )
 }
 
-function Entry({ c, open, onToggle, onOpenRecord, onSaved }: {
-  c: Card; open: boolean; onToggle: () => void; onOpenRecord: (id: number, quote?: string) => void; onSaved: () => void
+function Entry({ g, open, onToggle, onOpenRecord, onSaved }: {
+  g: Group; open: boolean; onToggle: () => void; onOpenRecord: (id: number, quote?: string) => void; onSaved: () => void
 }) {
   const [body, setBody] = useState('')
   const [reason, setReason] = useState('')
   const [err, setErr] = useState('')
-  const d = new Date(c.done_on + 'T00:00:00')
+  const [allLessons, setAllLessons] = useState(false)
+  const first = g.cards[0]
+  const last = g.cards[g.cards.length - 1]
+  const d = new Date(first.done_on + 'T00:00:00')
+  const lessons = allLessons ? g.lessons : g.lessons.slice(0, 2)
 
   const save = async () => {
     try {
-      await api.addDecision(c.id, body, reason)
+      await api.addDecision(first.id, body, reason)
       setBody(''); setReason(''); setErr(''); onSaved()
     } catch (e) { setErr((e as Error).message) }
   }
@@ -98,21 +136,32 @@ function Entry({ c, open, onToggle, onOpenRecord, onSaved }: {
   return (
     <li className="entry">
       <div className="when">
-        {d.getMonth() + 1}.{String(d.getDate()).padStart(2, '0')}
-        <span>{d.getFullYear()} · {WEEK[d.getDay()]}요일</span>
+        {md(first.done_on)}
+        <span>{d.getFullYear()} · {WEEK[d.getDay()]}요일{last.done_on !== first.done_on ? ` · ~${md(last.done_on)}` : ''}</span>
       </div>
       <div className="what">
-        <h3>작년엔 이렇게 했다: {c.title}</h3>
-        <p className="tags">{c.cohort_name}{c.event_name ? ` · ${c.event_name}` : ''}</p>
-        {c.note && <p style={{ marginTop: 8 }}>{c.note}</p>}
-        {c.lessons.map((l) => (
-          <p key={l.id} className="margin-note"><b>그때 남긴 교훈</b>{l.body.length > 260 ? l.body.slice(0, 260) + "…" : l.body}</p>
+        <h3>작년엔 이렇게 했다: {g.event}</h3>
+        <p className="tags">{g.cohort} · 문서 {g.cards.length}건</p>
+        <ul className="docs">
+          {g.cards.map((c) => (
+            <li key={c.id}>
+              <span className="muted">{md(c.done_on)}</span>{' '}
+              <button className="link" onClick={() => onOpenRecord(c.record_id)}>{c.title}</button>
+              {c.note && <span className="muted"> — {c.note}</span>}
+            </li>
+          ))}
+        </ul>
+        {lessons.map((l) => (
+          <p key={l.id} className="margin-note"><b>그때 남긴 교훈 · {l.title}</b>{l.body.length > 260 ? l.body.slice(0, 260) + '…' : l.body}
+            {' '}<button className="link" onClick={() => onOpenRecord(l.id)}>원문</button></p>
         ))}
-        {c.decisions.map((x) => (
-          <p key={x.id} className="stamp"><b>그해 결정</b>{x.body} (이유: {x.reason})</p>
+        {g.lessons.length > 2 && (
+          <button className="link" onClick={() => setAllLessons(!allLessons)}>{allLessons ? '교훈 접기' : `교훈 ${g.lessons.length - 2}건 더 보기`}</button>
+        )}
+        {g.decisions.map((x) => (
+          <p key={x.id} className="stamp"><b>그해 결정 · {x.decided_on}</b>{x.body} (이유: {x.reason})</p>
         ))}
         <div className="actions">
-          <button className="btn" onClick={() => onOpenRecord(c.record_id)}>원문 보기</button>
           <button className="btn primary" onClick={onToggle} aria-expanded={open}>올해 결정 남기기</button>
         </div>
         {open && (

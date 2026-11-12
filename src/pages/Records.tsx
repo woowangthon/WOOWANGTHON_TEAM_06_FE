@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api, type Cohort, type SeniorRecord } from '../api'
+import { useToast } from '../toast'
 
 const TYPES = ['meeting', 'event'] as const
 const TYPE_LABEL: Record<string, string> = { meeting: '회의록', event: '행사 문서', lesson: '교훈', decision: '결정' }
@@ -16,7 +17,15 @@ export default function Records({ onOpenDoc }: { onOpenDoc: (id: number, quote?:
     api.cohorts().then(setCohorts).catch(() => {})
   }
   useEffect(load, [])
-  const groups = list.reduce<Record<string, SeniorRecord[]>>((m, r) => {
+  const [q, setQ] = useState('')
+  const [cohortF, setCohortF] = useState(0)
+  const [typeF, setTypeF] = useState('')
+  const shown = list.filter((r) =>
+    (!cohortF || r.cohort_id === cohortF) && (!typeF || r.type === typeF) &&
+    (!q.trim() || (r.title + ' ' + r.event_name + ' ' + r.body).toLowerCase().includes(q.trim().toLowerCase())))
+  const events = [...new Map(list.filter((r) => r.event_name).map((r) => [`${r.cohort_id}|${r.event_name}`, { cohort: r.cohort_id, event: r.event_name }])).values()]
+
+  const groups = shown.reduce<Record<string, SeniorRecord[]>>((m, r) => {
     const k = `${cohorts.find((c) => c.id === r.cohort_id)?.name ?? ''} · ${r.event_name || '기타'}`
     ;(m[k] ||= []).push(r)
     return m
@@ -26,9 +35,22 @@ export default function Records({ onOpenDoc }: { onOpenDoc: (id: number, quote?:
     <section>
       {error && <p className="error" role="alert">{error}</p>}
       <AddForm cohorts={cohorts} onSaved={load} />
-      <InterviewBox cohorts={cohorts} state={interview} setState={setInterview} onSaved={load} />
+      <InterviewBox cohorts={cohorts} events={events} state={interview} setState={setInterview} onSaved={load} />
+      <div className="filters">
+        <input type="search" name="q" aria-label="기록 검색" placeholder="제목·행사·본문에서 찾기" value={q} onChange={(e) => setQ(e.target.value)} />
+        <select aria-label="기수 거르기" value={cohortF} onChange={(e) => setCohortF(+e.target.value)}>
+          <option value={0}>모든 기수</option>
+          {cohorts.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+        <select aria-label="종류 거르기" value={typeF} onChange={(e) => setTypeF(e.target.value)}>
+          <option value="">모든 종류</option>
+          {Object.entries(TYPE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+        </select>
+        <span className="muted">{shown.length}건</span>
+      </div>
       <div className="records">
         <div className="list">
+          {shown.length === 0 && <p className="empty">조건에 맞는 기록이 없다.</p>}
           {Object.entries(groups).map(([k, rs]) => (
             <div key={k}>
               <h3>{k}</h3>
@@ -59,6 +81,7 @@ export default function Records({ onOpenDoc }: { onOpenDoc: (id: number, quote?:
 }
 
 function AddForm({ cohorts, onSaved }: { cohorts: Cohort[]; onSaved: () => void }) {
+  const notify = useToast()
   const [f, setF] = useState({ cohort_id: 0, type: 'meeting', title: '', body: '', event_name: '', occurred_on: '' })
   const [file, setFile] = useState<File | null>(null)
   const [msg, setMsg] = useState('')
@@ -79,6 +102,7 @@ function AddForm({ cohorts, onSaved }: { cohorts: Cohort[]; onSaved: () => void 
       } else {
         r = await api.addRecord({ ...f, cohort_id: cohort })
       }
+      notify('기록을 저장했다.')
       setMsg(`저장했다. ${r.record.occurred_on} 기록에서 일정 항목 ${r.timeline_items.length}개를 뽑았다${r.extraction === 'failed' ? ' (추출 실패: 기록만 저장)' : ''}.`)
       setF({ ...f, title: '', body: '' }); setFile(null); onSaved()
     } catch (e) { setMsg((e as Error).message) }
@@ -119,26 +143,31 @@ function AddForm({ cohorts, onSaved }: { cohorts: Cohort[]; onSaved: () => void 
 
 type IState = { cohort: number; event: string; question: string } | null
 
-function InterviewBox({ cohorts, state, setState, onSaved }: {
-  cohorts: Cohort[]; state: IState; setState: (s: IState) => void; onSaved: () => void
+function InterviewBox({ cohorts, events, state, setState, onSaved }: {
+  cohorts: Cohort[]; events: { cohort: number; event: string }[]; state: IState; setState: (s: IState) => void; onSaved: () => void
 }) {
+  const notify = useToast()
   const [cohort, setCohort] = useState(0)
   const [event, setEvent] = useState('')
+  const [custom, setCustom] = useState('')
   const [answer, setAnswer] = useState('')
   const [msg, setMsg] = useState('')
+  const [n, setN] = useState(0)
   const cid = cohort || cohorts[cohorts.length - 1]?.id
+  const options = events.filter((e) => e.cohort === cid).map((e) => e.event)
+  const chosen = custom.trim() || event || options[0] || ''
 
   const next = async (c: number, e: string) => {
     const r = await api.interviewNext(c, e)
     setState(r.question ? { cohort: c, event: e, question: r.question } : null)
-    setMsg(r.question ? '' : '질문을 모두 마쳤다. 교훈이 기록으로 남았다.')
+    if (!r.question) { setMsg('질문을 모두 마쳤다. 답변이 교훈 기록으로 남았다.'); notify('인터뷰를 마쳤다. 교훈이 기록에 남았다.'); setN(0) }
   }
-  const start = () => event.trim() && next(cid, event.trim()).catch((e) => setMsg(e.message))
+  const start = () => chosen && (setN(0), next(cid, chosen).catch((e) => setMsg(e.message)))
   const send = async () => {
     if (!state || !answer.trim()) return
     try {
       await api.interviewAnswer(state.cohort, state.event, state.question, answer.trim())
-      setAnswer(''); onSaved(); await next(state.cohort, state.event)
+      setAnswer(''); setN(n + 1); onSaved(); await next(state.cohort, state.event)
     } catch (e) { setMsg((e as Error).message) }
   }
 
@@ -147,19 +176,29 @@ function InterviewBox({ cohorts, state, setState, onSaved }: {
       <summary>퇴임 인터뷰</summary>
       <div className="form">
         {!state && (
-          <div className="row">
-            <select aria-label="기수" name="cohort" value={cid} onChange={(e) => setCohort(+e.target.value)}>
-              {cohorts.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-            <input className="grow" aria-label="인터뷰할 행사명" name="event" autoComplete="off" placeholder="인터뷰할 행사명 (예: 송년회)" value={event} onChange={(e) => setEvent(e.target.value)} />
-            <button className="btn primary" onClick={start}>인터뷰 시작</button>
-          </div>
+          <>
+            <p className="muted">행사를 고르면 AI 선배가 후회한 점과 다음 기수에게 남길 말을 물어본다. 답은 교훈 기록으로 저장된다.</p>
+            <div className="row">
+              <select aria-label="기수" name="cohort" value={cid} onChange={(e) => { setCohort(+e.target.value); setEvent('') }}>
+                {cohorts.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+              <select aria-label="인터뷰할 행사" name="event" value={event || options[0] || ''} onChange={(e) => setEvent(e.target.value)} disabled={!options.length}>
+                {options.map((o) => <option key={o} value={o}>{o}</option>)}
+              </select>
+              <input className="grow" aria-label="직접 입력한 행사명" name="event_custom" autoComplete="off" placeholder="목록에 없으면 직접 입력" value={custom} onChange={(e) => setCustom(e.target.value)} />
+              <button className="btn primary" onClick={start} disabled={!chosen}>인터뷰 시작</button>
+            </div>
+          </>
         )}
         {state && (
           <>
+            <p className="progress">{state.event} · 질문 {n + 1}/3</p>
             <p className="lead">{state.question}</p>
             <textarea rows={3} aria-label="답변" name="answer" value={answer} onChange={(e) => setAnswer(e.target.value)} />
-            <button className="btn primary" onClick={send}>답하고 다음 질문</button>
+            <div className="row">
+              <button className="btn primary" onClick={send} disabled={!answer.trim()}>답하고 다음 질문</button>
+              <button className="btn" onClick={() => setState(null)}>그만하기</button>
+            </div>
           </>
         )}
         {msg && <p className="notice" role="status">{msg}</p>}
