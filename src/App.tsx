@@ -22,14 +22,17 @@ export default function App() {
   return (
     <>
       <header className="top">
-        <h1>졸업하지 않는 선배</h1>
-        <nav>
-          {TABS.map(([k, label]) => (
-            <button key={k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>
-              {label}
-            </button>
-          ))}
-        </nav>
+        <div className="top-in">
+          <h1 className="brand">졸업하지 않는 선배</h1>
+          <p className="tagline">지난 기수가 남긴 기록을 먼저 꺼내 주는 AI 선배</p>
+          <nav aria-label="화면">
+            {TABS.map(([k, label]) => (
+              <button key={k} className={tab === k ? 'on' : ''} aria-current={tab === k ? 'page' : undefined} onClick={() => setTab(k)}>
+                {label}
+              </button>
+            ))}
+          </nav>
+        </div>
       </header>
       <main>
         {tab === 'last' && <LastYear onOpenRecord={showRecord} />}

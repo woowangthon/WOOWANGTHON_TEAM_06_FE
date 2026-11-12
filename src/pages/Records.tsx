@@ -21,26 +21,44 @@ export default function Records({ openId, onClose }: { openId: number | null; on
     else setDetail(null)
   }, [openId])
 
+  const groups = list.reduce<Record<string, SeniorRecord[]>>((m, r) => {
+    const k = `${cohorts.find((c) => c.id === r.cohort_id)?.name ?? ''} · ${r.event_name || '기타'}`
+    ;(m[k] ||= []).push(r)
+    return m
+  }, {})
+
   return (
     <section>
-      {error && <p className="error">{error}</p>}
-      {detail && (
-        <article className="card">
-          <div className="meta">{detail.occurred_on} · {TYPE_LABEL[detail.type]} · {detail.event_name}</div>
-          <h2>{detail.title}</h2>
-          <p className="pre">{detail.body}</p>
-          <button onClick={onClose}>닫기</button>
-        </article>
-      )}
+      {error && <p className="error" role="alert">{error}</p>}
       <AddForm cohorts={cohorts} onSaved={load} />
       <InterviewBox cohorts={cohorts} state={interview} setState={setInterview} onSaved={load} />
-      <h2>기록 목록</h2>
-      {list.map((r) => (
-        <p key={r.id} className="item">
-          <button className="link" onClick={() => api.record(r.id).then(setDetail)}>{r.occurred_on} {r.title}</button>
-          <span className="muted"> · {TYPE_LABEL[r.type]} · {r.event_name}</span>
-        </p>
-      ))}
+      <div className="records">
+        <div className="list">
+          {Object.entries(groups).map(([k, rs]) => (
+            <div key={k}>
+              <h3>{k}</h3>
+              {rs.map((r) => (
+                <button key={r.id} className={`item ${r.type === 'lesson' ? 'lesson' : ''} ${detail?.id === r.id ? 'on' : ''}`}
+                  onClick={() => api.record(r.id).then(setDetail)}>
+                  <span className="d">{r.occurred_on}</span>{r.title}
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
+        <div>
+          {detail ? (
+            <article className="sheet">
+              <p className="tags">{detail.occurred_on} · {TYPE_LABEL[detail.type]} · {detail.event_name}</p>
+              <h2>{detail.title}</h2>
+              <p className="body">{detail.body}</p>
+              <div className="actions"><button className="btn" onClick={() => { setDetail(null); onClose() }}>닫기</button></div>
+            </article>
+          ) : (
+            <p className="empty">왼쪽에서 기록을 고르면 원문이 여기에 열린다.</p>
+          )}
+        </div>
+      </div>
     </section>
   )
 }
@@ -60,7 +78,7 @@ function AddForm({ cohorts, onSaved }: { cohorts: Cohort[]; onSaved: () => void 
   }
 
   return (
-    <details className="card" open>
+    <details className="panel">
       <summary>기록 등록</summary>
       <div className="form">
         <div className="row">
@@ -76,7 +94,7 @@ function AddForm({ cohorts, onSaved }: { cohorts: Cohort[]; onSaved: () => void 
         <input placeholder="행사명 (예: 봄 축제 부스)" value={f.event_name} onChange={(e) => set('event_name', e.target.value)} />
         <textarea rows={5} placeholder="본문 (날짜는 2025-05-02 형식으로 적으면 일정으로 뽑힌다)" value={f.body}
           onChange={(e) => set('body', e.target.value)} />
-        <button className="primary" onClick={save}>저장하고 일정 뽑기</button>
+        <button className="btn primary" onClick={save}>저장하고 일정 뽑기</button>
         {msg && <p className="notice">{msg}</p>}
       </div>
     </details>
@@ -109,7 +127,7 @@ function InterviewBox({ cohorts, state, setState, onSaved }: {
   }
 
   return (
-    <details className="card">
+    <details className="panel">
       <summary>퇴임 인터뷰</summary>
       <div className="form">
         {!state && (
@@ -118,14 +136,14 @@ function InterviewBox({ cohorts, state, setState, onSaved }: {
               {cohorts.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
             <input className="grow" placeholder="인터뷰할 행사명 (예: 송년회)" value={event} onChange={(e) => setEvent(e.target.value)} />
-            <button className="primary" onClick={start}>인터뷰 시작</button>
+            <button className="btn primary" onClick={start}>인터뷰 시작</button>
           </div>
         )}
         {state && (
           <>
-            <p className="answer">🎓 {state.question}</p>
+            <p className="lead">{state.question}</p>
             <textarea rows={3} value={answer} onChange={(e) => setAnswer(e.target.value)} />
-            <button className="primary" onClick={send}>답하고 다음 질문</button>
+            <button className="btn primary" onClick={send}>답하고 다음 질문</button>
           </>
         )}
         {msg && <p className="notice">{msg}</p>}
