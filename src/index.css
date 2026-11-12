@@ -33,7 +33,7 @@ main { max-width: 980px; margin: 0 auto; padding: 34px 28px 96px; }
 .hero-date { font-family: var(--serif); font-weight: 800; font-size: clamp(2.6rem, 8vw, 4.6rem); line-height: 1.1; letter-spacing: -0.03em; margin: 4px 0 6px; }
 .hero-date small { font-size: .38em; font-weight: 600; color: var(--accent); margin-left: .4em; letter-spacing: 0; }
 .picker { display: inline-flex; align-items: center; gap: 10px; margin-top: 10px; color: var(--ink-2); font-size: .95rem; }
-input[type=date], input[type=text], input:not([type]), select, textarea { background: var(--sheet); border: 1.5px solid var(--rule); border-radius: 10px; padding: 10px 14px; }
+input[type=date], input[type=text], input[type=search], input[type=password], input:not([type]), select, textarea { background: var(--sheet); border: 1.5px solid var(--rule); border-radius: 10px; padding: 10px 14px; }
 input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 
 .ribbon { display: grid; grid-template-columns: repeat(12, 1fr); gap: 6px; margin: 28px 0 8px; align-items: end; }
@@ -154,7 +154,7 @@ nav button { white-space: nowrap; flex: none; }
 .ribbon button { white-space: nowrap; }
 @media (max-width: 520px) {
   :root { font-size: 17px; }
-  nav button { padding: 10px 13px; }
+  nav { gap: 0; } nav button { padding: 10px 9px; font-size: .9rem; }
   .hero-date { font-size: 2.3rem; }
   .ribbon { gap: 3px; } .ribbon button { font-size: .72rem; }
   .stats { gap: 16px; } .stats div { text-align: left; }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api, type Cohort, type SeniorRecord } from '../api'
 import { useToast } from '../toast'
 
@@ -18,6 +18,7 @@ export default function Records({ onOpenDoc }: { onOpenDoc: (id: number, quote?:
   }
   useEffect(load, [])
   const notify = useToast()
+  const sheetRef = useRef<HTMLDivElement>(null)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState({ title: '', event_name: '', occurred_on: '', body: '' })
   const [q, setQ] = useState('')
@@ -54,6 +55,10 @@ export default function Records({ onOpenDoc }: { onOpenDoc: (id: number, quote?:
     } catch (e) { setError((e as Error).message) }
   }
 
+  useEffect(() => {  // on narrow screens the sheet sits under the list: bring it into view
+    if (detail && window.matchMedia('(max-width: 760px)').matches) sheetRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [detail?.id])
+
   const ordered = Object.entries(groups).sort((a, b) => b[1][0].occurred_on.localeCompare(a[1][0].occurred_on))
 
   return (
@@ -88,7 +93,7 @@ export default function Records({ onOpenDoc }: { onOpenDoc: (id: number, quote?:
             </div>
           ))}
         </div>
-        <div>
+        <div ref={sheetRef}>
           {detail ? (
             <article className="sheet">
               {editing ? (
