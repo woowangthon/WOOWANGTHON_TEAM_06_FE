@@ -12,7 +12,7 @@ export default function Records({ onOpenDoc, search, registerTick }: { onOpenDoc
   const [cohorts, setCohorts] = useState<Cohort[]>([])
   const [detail, setDetail] = useState<SeniorRecord | null>(null)
   const [error, setError] = useState('')
-  const [interview, setInterview] = useState<{ cohort: number; event: string; question: string } | null>(null)
+  const [interview, setInterview] = useState<IState>(null)
 
   const load = () => {
     api.records().then(setList).catch((e) => setError(e.message))
@@ -260,7 +260,7 @@ function AddForm({ cohorts, onSaved, open, onToggle }: { cohorts: Cohort[]; onSa
   )
 }
 
-type IState = { cohort: number; event: string; question: string } | null
+type IState = { cohort: number; event: string; question: string; basis: string; total: number; answered: number } | null
 
 function InterviewBox({ cohorts, events, state, setState, onSaved }: {
   cohorts: Cohort[]; events: { cohort: number; event: string }[]; state: IState; setState: (s: IState) => void; onSaved: () => void
@@ -271,22 +271,25 @@ function InterviewBox({ cohorts, events, state, setState, onSaved }: {
   const [custom, setCustom] = useState('')
   const [answer, setAnswer] = useState('')
   const [msg, setMsg] = useState('')
-  const [n, setN] = useState(0)
+  const [thinking, setThinking] = useState(false)
   const cid = cohort || cohorts[cohorts.length - 1]?.id
   const options = events.filter((e) => e.cohort === cid).map((e) => e.event)
   const chosen = custom.trim() || event || options[0] || ''
 
   const next = async (c: number, e: string) => {
-    const r = await api.interviewNext(c, e)
-    setState(r.question ? { cohort: c, event: e, question: r.question } : null)
-    if (!r.question) { setMsg('질문을 모두 마쳤습니다. 답변이 교훈 기록으로 남았습니다.'); notify('인터뷰를 마쳤습니다. 교훈이 기록에 남았습니다.'); setN(0) }
+    setThinking(true)
+    try {
+      const r = await api.interviewNext(c, e)
+      setState(r.question ? { cohort: c, event: e, question: r.question, basis: r.basis, total: r.total, answered: r.answered } : null)
+      if (!r.question) { setMsg('질문을 모두 마쳤습니다. 답변이 교훈 기록으로 남았습니다.'); notify('인터뷰를 마쳤습니다. 교훈이 기록에 남았습니다.') }
+    } finally { setThinking(false) }
   }
-  const start = () => chosen && (setN(0), next(cid, chosen).catch((e) => setMsg(e.message)))
+  const start = () => chosen && next(cid, chosen).catch((e) => setMsg(e.message))
   const send = async () => {
     if (!state || !answer.trim()) return
     try {
       await api.interviewAnswer(state.cohort, state.event, state.question, answer.trim())
-      setAnswer(''); setN(n + 1); onSaved(); await next(state.cohort, state.event)
+      setAnswer(''); onSaved(); await next(state.cohort, state.event)
     } catch (e) { setMsg((e as Error).message) }
   }
 
@@ -296,7 +299,7 @@ function InterviewBox({ cohorts, events, state, setState, onSaved }: {
       <div className="form">
         {!state && (
           <>
-            <p className="muted">행사를 고르면 AI 선배가 후회한 점과 다음 기수에게 남길 말을 물어봅니다. 답변은 교훈 기록으로 저장됩니다.</p>
+            <p className="muted">행사를 고르면 AI 선배가 그 행사의 기록을 읽고, 후회한 점과 다음 기수에게 남길 말을 구체적으로 물어봅니다. 답변은 교훈 기록으로 저장됩니다.</p>
             <div className="row">
               <select aria-label="기수" name="cohort" value={cid} onChange={(e) => { setCohort(+e.target.value); setEvent('') }}>
                 {cohorts.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -305,17 +308,18 @@ function InterviewBox({ cohorts, events, state, setState, onSaved }: {
                 {options.map((o) => <option key={o} value={o}>{o}</option>)}
               </select>
               <input className="grow" aria-label="직접 입력한 행사명" name="event_custom" autoComplete="off" placeholder="목록에 없으면 직접 입력해 주세요" value={custom} onChange={(e) => setCustom(e.target.value)} />
-              <button className="btn primary" onClick={start} disabled={!chosen}>인터뷰 시작</button>
+              <button className="btn primary" onClick={start} disabled={!chosen || thinking}>{thinking ? '질문을 만드는 중…' : '인터뷰 시작'}</button>
             </div>
           </>
         )}
         {state && (
           <>
-            <p className="progress">{state.event} · 질문 {n + 1}/3</p>
+            <p className="progress">{state.event} · 질문 {state.answered + 1}/{state.total}</p>
             <p className="lead">{state.question}</p>
+            {state.basis && <p className="basis">기록에는 이렇게 적혀 있습니다. “{state.basis}”</p>}
             <textarea rows={3} aria-label="답변" name="answer" value={answer} onChange={(e) => setAnswer(e.target.value)} />
             <div className="row">
-              <button className="btn primary" onClick={send} disabled={!answer.trim()}>답하고 다음 질문</button>
+              <button className="btn primary" onClick={send} disabled={!answer.trim() || thinking}>{thinking ? '다음 질문을 만드는 중…' : '답하고 다음 질문'}</button>
               <button className="btn" onClick={() => setState(null)}>그만하기</button>
             </div>
           </>

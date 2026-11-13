@@ -20,6 +20,12 @@ export type GraphNode = {
 }
 export type GraphEdge = { source: string; target: string; rel: string }
 export type TableHit = { record_id: number; title: string; event_name: string; occurred_on: string; caption: string; table: string; has_pdf: boolean; score: number }
+export type Briefing = {
+  summary: string; todos: { title: string; why: string; record_ids: number[] }[]
+  cautions: { text: string; record_id: number | null }[]; records: Record<string, string>; events: string[]; provider: string; cached: boolean
+}
+export type InterviewNext = { question: string | null; basis: string; total: number; done: boolean; answered: number }
+export type DecisionDraft = { body: string; reason: string; provider: string; sources: { record_id: number; title: string }[] }
 export type Graph = { nodes: GraphNode[]; edges: GraphEdge[]; relations: Record<string, string> }
 export type Stats = { records: number; passages: number; events: number; cohorts: number; lessons: number; decisions: number; with_original: number; characters: number }
 export type Cohort = { id: number; name: string; year: number }
@@ -78,7 +84,10 @@ export const api = {
   addRecord: (b: Omit<SeniorRecord, 'id' | 'has_pdf'>) =>
     post<{ record: SeniorRecord; timeline_items: unknown[]; extraction: string; passages: number }>('/api/records', b),
   interviewNext: (cohort_id: number, event_name: string) =>
-    post<{ question: string | null; done: boolean }>('/api/interviews/next', { cohort_id, event_name }),
+    post<InterviewNext>('/api/interviews/next', { cohort_id, event_name }),
+  briefing: (date: string, refresh = false) =>
+    call<Briefing>(`/api/briefing?date=${date}&window_days=14${refresh ? '&refresh=true' : ''}`),
+  suggestDecision: (timeline_item_id: number) => post<DecisionDraft>('/api/decisions/suggest', { timeline_item_id }),
   interviewAnswer: (cohort_id: number, event_name: string, question: string, answer: string) =>
     post<SeniorRecord>('/api/interviews/answer', { cohort_id, event_name, question, answer }),
   addDecision: (timeline_item_id: number, body: string, reason: string) =>

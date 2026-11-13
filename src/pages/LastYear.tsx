@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { api, type Card, type Decision, type DecisionRow, type Lesson, type LastYear as Data, type SeniorRecord } from '../api'
+import { api, type Briefing, type Card, type Decision, type DecisionDraft, type DecisionRow, type Lesson, type LastYear as Data, type SeniorRecord } from '../api'
 import { useToast } from '../toast'
 import SideSlot from '../SideSlot'
 
@@ -29,6 +29,9 @@ export default function LastYear({ onOpenRecord }: { onOpenRecord: (id: number, 
   const [decisions, setDecisions] = useState<DecisionRow[]>([])
   const [error, setError] = useState('')
   const [deciding, setDeciding] = useState<string | null>(null)
+  const [brief, setBrief] = useState<Briefing | null>(null)
+  const [briefBusy, setBriefBusy] = useState(false)
+  const [briefError, setBriefError] = useState('')
   const notify = useToast()
 
   const load = () => {
@@ -36,6 +39,11 @@ export default function LastYear({ onOpenRecord }: { onOpenRecord: (id: number, 
     api.lastYear(date).then(setData).catch((e) => setError(e.message))
   }
   useEffect(load, [date])
+  const loadBrief = (refresh = false) => {
+    setBriefBusy(true); setBriefError('')
+    api.briefing(date, refresh).then(setBrief).catch((e) => { setBrief(null); setBriefError(e.message) }).finally(() => setBriefBusy(false))
+  }
+  useEffect(() => { loadBrief() }, [date])
   useEffect(() => {
     api.records().then(setRecords).catch(() => {})
     api.decisions().then(setDecisions).catch(() => {})
@@ -68,6 +76,44 @@ export default function LastYear({ onOpenRecord }: { onOpenRecord: (id: number, 
         </dl>
         {data && <Ribbon center={data.center} windowDays={data.window_days} records={records} onPick={setDate} />}
       </SideSlot>
+
+      <section className="brief" aria-live="polite">
+        <header>
+          <span className="ai-badge">AI 선배</span>
+          <strong>작년 이맘때 브리핑</strong>
+          <button className="btn" onClick={() => loadBrief(true)} disabled={briefBusy}>{briefBusy ? '작성 중…' : '다시 만들기'}</button>
+        </header>
+        {briefBusy && !brief && <p className="muted">작년 기록을 읽고 정리하는 중입니다. 잠시만 기다려 주세요…</p>}
+        {briefError && <p className="muted">브리핑을 불러오지 못했습니다({briefError}). 아래 카드는 그대로 볼 수 있습니다.</p>}
+        {brief && (
+          <div className={briefBusy ? 'dim' : ''}>
+            <p className="brief-sum">{brief.summary}</p>
+            {brief.todos.length > 0 && (
+              <>
+                <h4>이번에 챙길 일</h4>
+                <ul>
+                  {brief.todos.map((t, i) => (
+                    <li key={i}><b>{t.title}</b>{t.why && <> — {t.why}</>}{' '}
+                      {t.record_ids.map((id) => <button key={id} className="link src-link" onClick={() => onOpenRecord(id)}>{brief.records[String(id)] ?? '근거'}</button>)}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+            {brief.cautions.length > 0 && (
+              <>
+                <h4>작년에 아쉬웠던 점</h4>
+                <ul>
+                  {brief.cautions.map((c, i) => (
+                    <li key={i}>{c.text}{' '}{c.record_id && <button className="link src-link" onClick={() => onOpenRecord(c.record_id!)}>{brief.records[String(c.record_id)] ?? '근거'}</button>}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+            <p className="muted">작년 기록을 바탕으로 한 제안입니다. 올해 어떻게 할지는 직접 결정해 주세요.{brief.provider === 'fake' ? ' (AI 연결 전의 기본 요약입니다.)' : ''}</p>
+          </div>
+        )}
+      </section>
 
       {error && <p className="error" role="alert">{error}</p>}
       {!data && !error && <div className="skeleton" aria-hidden="true"><i /><i /><i /></div>}
@@ -124,15 +170,26 @@ function Entry({ g, open, onToggle, onOpenRecord, onSaved }: {
   const [reason, setReason] = useState('')
   const [err, setErr] = useState('')
   const [allLessons, setAllLessons] = useState(false)
+  const [draft, setDraft] = useState<DecisionDraft | null>(null)
+  const [drafting, setDrafting] = useState(false)
   const first = g.cards[0]
   const last = g.cards[g.cards.length - 1]
   const d = new Date(first.done_on + 'T00:00:00')
   const lessons = allLessons ? g.lessons : g.lessons.slice(0, 2)
 
+  const askDraft = async () => {
+    setDrafting(true); setErr('')
+    try {
+      const d = await api.suggestDecision(first.id)
+      setDraft(d); setBody(d.body); setReason(d.reason)
+    } catch (e) { setErr((e as Error).message) }
+    setDrafting(false)
+  }
+
   const save = async () => {
     try {
       await api.addDecision(first.id, body, reason)
-      setBody(''); setReason(''); setErr(''); onSaved()
+      setBody(''); setReason(''); setErr(''); setDraft(null); onSaved()
     } catch (e) { setErr((e as Error).message) }
   }
 
@@ -175,7 +232,15 @@ function Entry({ g, open, onToggle, onOpenRecord, onSaved }: {
           <div className="form">
             <input placeholder="올해는 어떻게 할지 적어 주세요" aria-label="올해 결정" name="decision" autoComplete="off" value={body} onChange={(e) => setBody(e.target.value)} />
             <input placeholder="이유를 적어 주세요" aria-label="결정 이유" name="reason" autoComplete="off" value={reason} onChange={(e) => setReason(e.target.value)} />
-            <div className="row"><button className="btn primary" onClick={save}>결정 저장</button></div>
+            <div className="row">
+              <button className="btn" onClick={askDraft} disabled={drafting}>{drafting ? '초안 작성 중…' : 'AI 선배에게 초안 받기'}</button>
+              <button className="btn primary" onClick={save} disabled={!body.trim() || !reason.trim()}>결정 저장</button>
+            </div>
+            {draft && (
+              <p className="muted">AI 선배가 작년 기록을 바탕으로 제안한 초안입니다. 고쳐서 저장해 주세요.{' '}
+                {draft.sources.map((x) => <button key={x.record_id} className="link src-link" onClick={() => onOpenRecord(x.record_id)}>{x.title || '근거'}</button>)}
+              </p>
+            )}
             {err && <p className="error" role="alert">{err}</p>}
           </div>
         )}
