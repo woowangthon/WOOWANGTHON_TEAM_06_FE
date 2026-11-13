@@ -114,6 +114,11 @@ export default function Records({ onOpenDoc }: { onOpenDoc: (id: number, quote?:
                 <>
                   <p className="tags">{detail.occurred_on} · {TYPE_LABEL[detail.type]} · {detail.event_name}</p>
                   <h2>{detail.title}</h2>
+                  {detail.has_pdf && (
+                    <button className="preview" onClick={() => onOpenDoc(detail.id)}>
+                      원본 문서가 있다. 눌러서 원래 모습 그대로 보기
+                    </button>
+                  )}
                   <p className="body">{detail.body}</p>
                   <div className="actions">
                     <button className="btn primary" onClick={() => onOpenDoc(detail.id)}>{detail.has_pdf ? '원본 문서 보기' : '크게 보기'}</button>

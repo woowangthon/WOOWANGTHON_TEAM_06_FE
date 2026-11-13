@@ -12,7 +12,7 @@ export default function DocModal({ id, quote, onClose }: Props) {
   const markRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
-    api.record(id).then((r) => { setRec(r); setTab(r.has_pdf && !quote ? 'pdf' : 'text') }).catch((e) => setError(e.message))
+    api.record(id).then((r) => { setRec(r); setTab(r.has_pdf ? 'pdf' : 'text') }).catch((e) => setError(e.message))
   }, [id, quote])
 
   useEffect(() => {
@@ -55,6 +55,12 @@ export default function DocModal({ id, quote, onClose }: Props) {
         </header>
         <div className="modal-body">
           {error && <p className="error" role="alert">{error}</p>}
+          {rec && tab === 'pdf' && quote && (
+            <div className="quote-bar">
+              <span>근거 문장: “{quote.length > 70 ? quote.slice(0, 70) + '…' : quote}”</span>
+              <button className="link" onClick={() => setTab('text')}>텍스트에서 형광펜으로 보기</button>
+            </div>
+          )}
           {rec && tab === 'pdf' && (pdfUrl ? <iframe title={rec.title} src={`${pdfUrl}#view=FitH`} /> : !error && <p className="empty">원본 문서를 불러오는 중…</p>)}
           {rec && tab === 'text' && (
             <div className="text-view">
