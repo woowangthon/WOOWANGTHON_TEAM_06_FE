@@ -6,7 +6,7 @@ import SideSlot from '../SideSlot'
 const TYPES = ['meeting', 'event'] as const
 const TYPE_LABEL: Record<string, string> = { meeting: '회의록', event: '행사 문서', lesson: '교훈', decision: '결정' }
 
-export default function Records({ onOpenDoc }: { onOpenDoc: (id: number, quote?: string) => void }) {
+export default function Records({ onOpenDoc, search, registerTick }: { onOpenDoc: (id: number, quote?: string) => void; search: string; registerTick: number }) {
   const [list, setList] = useState<SeniorRecord[]>([])
   const [cohorts, setCohorts] = useState<Cohort[]>([])
   const [detail, setDetail] = useState<SeniorRecord | null>(null)
@@ -22,19 +22,18 @@ export default function Records({ onOpenDoc }: { onOpenDoc: (id: number, quote?:
   const sheetRef = useRef<HTMLDivElement>(null)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState({ title: '', event_name: '', occurred_on: '', body: '' })
-  const [q, setQ] = useState('')
+  const [addOpen, setAddOpen] = useState(false)
+  const addRef = useRef<HTMLDivElement>(null)
+  const q = search
+  useEffect(() => {
+    if (registerTick > 0) { setAddOpen(true); addRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }
+  }, [registerTick])
   const [cohortF, setCohortF] = useState(0)
   const [typeF, setTypeF] = useState('')
   const shown = list.filter((r) =>
     (!cohortF || r.cohort_id === cohortF) && (!typeF || r.type === typeF) &&
     (!q.trim() || (r.title + ' ' + r.event_name + ' ' + r.body).toLowerCase().includes(q.trim().toLowerCase())))
   const events = [...new Map(list.filter((r) => r.event_name).map((r) => [`${r.cohort_id}|${r.event_name}`, { cohort: r.cohort_id, event: r.event_name }])).values()]
-
-  const groups = shown.reduce<Record<string, SeniorRecord[]>>((m, r) => {
-    const k = `${cohorts.find((c) => c.id === r.cohort_id)?.name ?? ''} · ${r.event_name || '기타'}`
-    ;(m[k] ||= []).push(r)
-    return m
-  }, {})
 
   const startEdit = () => {
     if (!detail) return
@@ -60,18 +59,12 @@ export default function Records({ onOpenDoc }: { onOpenDoc: (id: number, quote?:
     if (detail && window.matchMedia('(max-width: 760px)').matches) sheetRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [detail?.id])
 
-  const ordered = Object.entries(groups).sort((a, b) => b[1][0].occurred_on.localeCompare(a[1][0].occurred_on))
-
   return (
     <section>
       {error && <p className="error" role="alert">{error}</p>}
-      <AddForm cohorts={cohorts} onSaved={load} />
+      <div ref={addRef}><AddForm cohorts={cohorts} onSaved={load} open={addOpen} onToggle={setAddOpen} /></div>
       <InterviewBox cohorts={cohorts} events={events} state={interview} setState={setInterview} onSaved={load} />
       <SideSlot>
-        <div className="side-block">
-          <label className="side-label" htmlFor="rec-q">기록 찾기</label>
-          <input id="rec-q" type="search" name="q" placeholder="제목·행사·본문에서 찾기" value={q} onChange={(e) => setQ(e.target.value)} />
-        </div>
         <div className="side-block">
           <label className="side-label" htmlFor="rec-cohort">기수</label>
           <select id="rec-cohort" value={cohortF} onChange={(e) => setCohortF(+e.target.value)}>
@@ -88,23 +81,26 @@ export default function Records({ onOpenDoc }: { onOpenDoc: (id: number, quote?:
         </div>
         <p className="side-count">조건에 맞는 기록 {shown.length}건</p>
       </SideSlot>
-      <div className="records">
-        <div className="list">
+      <div className={`records ${detail ? 'with-detail' : ''}`}>
+        <div className="mail-list">
+          <div className="mail-toolbar">
+            <h2>기록 <b>{shown.length}</b></h2>
+            {q && <span className="muted">“{q}” 검색 결과</span>}
+          </div>
+          <div className="mail-head" aria-hidden="true"><span>날짜</span><span>행사</span><span>제목</span><span>종류</span></div>
           {shown.length === 0 && <p className="empty">조건에 맞는 기록이 없습니다.</p>}
-          {ordered.map(([k, rs]) => (
-            <div key={k}>
-              <h3>{k}</h3>
-              {rs.map((r) => (
-                <button key={r.id} className={`item ${r.type === 'lesson' ? 'lesson' : ''} ${detail?.id === r.id ? 'on' : ''}`}
-                  onClick={() => { setEditing(false); api.record(r.id).then(setDetail) }}>
-                  <span className="d">{r.occurred_on}</span>{r.title}
-                </button>
-              ))}
-            </div>
+          {[...shown].sort((a, b) => b.occurred_on.localeCompare(a.occurred_on) || b.id - a.id).map((r) => (
+            <button key={r.id} className={`mail-row ${detail?.id === r.id ? 'on' : ''}`}
+              onClick={() => { setEditing(false); api.record(r.id).then(setDetail) }}>
+              <span className="c-date">{r.occurred_on}</span>
+              <span className="c-event"><i className="tagchip">{r.event_name || '기타'}</i></span>
+              <span className="c-title">{r.title}{r.has_pdf && <svg className="clip" viewBox="0 0 24 24" aria-label="원본 문서 있음"><path d="M21 12.5l-8.6 8.6a5 5 0 01-7.1-7.1l9-9a3.3 3.3 0 014.7 4.7l-9 9a1.7 1.7 0 01-2.4-2.4l8.3-8.3" /></svg>}</span>
+              <span className="c-type"><i className={`type ${r.type}`}>{TYPE_LABEL[r.type]}</i></span>
+            </button>
           ))}
         </div>
         <div ref={sheetRef}>
-          {detail ? (
+          {detail && (
             <article className="sheet">
               {editing ? (
                 <div className="form" style={{ marginTop: 0 }}>
@@ -122,6 +118,7 @@ export default function Records({ onOpenDoc }: { onOpenDoc: (id: number, quote?:
                 </div>
               ) : (
                 <>
+                  <button className="btn close" onClick={() => setDetail(null)} aria-label="닫기">닫기</button>
                   <p className="tags">{detail.occurred_on} · {TYPE_LABEL[detail.type]} · {detail.event_name}</p>
                   <h2>{detail.title}</h2>
                   {detail.has_pdf && (
@@ -138,8 +135,6 @@ export default function Records({ onOpenDoc }: { onOpenDoc: (id: number, quote?:
                 </>
               )}
             </article>
-          ) : (
-            <p className="empty">왼쪽에서 기록을 고르면 원문이 여기에 열립니다.</p>
           )}
         </div>
       </div>
@@ -147,7 +142,7 @@ export default function Records({ onOpenDoc }: { onOpenDoc: (id: number, quote?:
   )
 }
 
-function AddForm({ cohorts, onSaved }: { cohorts: Cohort[]; onSaved: () => void }) {
+function AddForm({ cohorts, onSaved, open, onToggle }: { cohorts: Cohort[]; onSaved: () => void; open: boolean; onToggle: (o: boolean) => void }) {
   const notify = useToast()
   const [f, setF] = useState({ cohort_id: 0, type: 'meeting', title: '', body: '', event_name: '', occurred_on: '' })
   const [files, setFiles] = useState<File[]>([])
@@ -197,7 +192,7 @@ function AddForm({ cohorts, onSaved }: { cohorts: Cohort[]; onSaved: () => void 
   }
 
   return (
-    <details className="panel">
+    <details className="panel" open={open} onToggle={(e) => onToggle(e.currentTarget.open)}>
       <summary>기록 등록</summary>
       <div className="form">
         <label className={`drop ${over ? 'over' : ''}`}

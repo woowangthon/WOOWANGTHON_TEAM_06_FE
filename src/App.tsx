@@ -8,11 +8,18 @@ import DocModal from './DocModal'
 import { ToastProvider } from './toast'
 
 const TABS = [
-  ['last', '작년 이맘때'],
-  ['ask', '선배에게 묻기'],
-  ['records', '기록'],
-  ['decisions', '결정'],
+  ['last', '작년 이맘때', 'clock'],
+  ['ask', '선배에게 묻기', 'chat'],
+  ['records', '기록', 'inbox'],
+  ['decisions', '결정', 'check'],
 ] as const
+
+const ICON: Record<string, string> = {
+  clock: 'M12 7v5l3 2M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+  chat: 'M4 5h16v11H9l-5 4V5z',
+  inbox: 'M3 13l3-8h12l3 8v6H3v-6zm0 0h5a4 4 0 008 0h5',
+  check: 'M5 12l4 4 10-10',
+}
 type Tab = (typeof TABS)[number][0]
 
 const fromHash = (): Tab => {
@@ -24,6 +31,9 @@ export default function App() {
   const [tab, setTabState] = useState<Tab>(fromHash)
   const [locked, setLocked] = useState(false)
   const [keyInput, setKeyInput] = useState('')
+  const [search, setSearch] = useState('')
+  const [registerTick, setRegisterTick] = useState(0)
+  const [counts, setCounts] = useState({ records: 0, decisions: 0 })
   const [doc, setDoc] = useState<{ id: number; quote?: string } | null>(null)
 
   const setTab = (t: Tab) => { location.hash = `/${t}`; setTabState(t) }
@@ -32,6 +42,9 @@ export default function App() {
     window.addEventListener('hashchange', on)
     return () => window.removeEventListener('hashchange', on)
   }, [])
+  useEffect(() => {
+    Promise.all([api.records(), api.decisions()]).then(([r, d]) => setCounts({ records: r.length, decisions: d.length })).catch(() => {})
+  }, [tab, doc])
   useEffect(() => {
     api.cohorts().catch((e) => e instanceof Unauthorized && setLocked(true))
   }, [])
@@ -54,16 +67,28 @@ export default function App() {
   return (
     <ToastProvider>
       <a className="skip" href="#main">본문으로 건너뛰기</a>
+      <header className="topbar">
+        <button className="logo" onClick={() => setTab('last')} aria-label="처음으로">
+          <span className="logo-mark" aria-hidden="true">선</span>졸업하지 않는 선배
+        </button>
+        <form className="gsearch" role="search" onSubmit={(e) => { e.preventDefault(); setTab('records') }}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4a7 7 0 105 11.9l4.4 4.4M11 4a7 7 0 010 14" /></svg>
+          <input type="search" name="global-search" aria-label="기록 검색" placeholder="기록 검색 (제목, 행사, 본문)" autoComplete="off"
+            value={search} onChange={(e) => { setSearch(e.target.value); if (e.target.value && tab !== 'records') setTab('records') }} />
+        </form>
+      </header>
       <div className="shell">
         <aside className="side">
-          <div className="side-head">
-            <h1 className="brand">졸업하지 않는 선배</h1>
-            <p className="tagline">지난 기수가 남긴 기록을 먼저 꺼내 주는 AI 선배</p>
-          </div>
+          <button className="compose" onClick={() => { setTab('records'); setRegisterTick((t) => t + 1) }}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>기록 등록
+          </button>
           <nav aria-label="화면">
-            {TABS.map(([k, label]) => (
+            {TABS.map(([k, label, icon]) => (
               <button key={k} className={tab === k ? 'on' : ''} aria-current={tab === k ? 'page' : undefined} onClick={() => setTab(k)}>
-                {label}
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d={ICON[icon]} /></svg>
+                <span>{label}</span>
+                {k === 'records' && <em>{counts.records}</em>}
+                {k === 'decisions' && <em>{counts.decisions}</em>}
               </button>
             ))}
           </nav>
@@ -72,7 +97,7 @@ export default function App() {
         <main id="main">
           {tab === 'last' && <LastYear onOpenRecord={openDoc} />}
           {tab === 'ask' && <Ask onOpenRecord={openDoc} />}
-          {tab === 'records' && <Records onOpenDoc={openDoc} />}
+          {tab === 'records' && <Records onOpenDoc={openDoc} search={search} registerTick={registerTick} />}
           {tab === 'decisions' && <Decisions onOpenDoc={openDoc} goLast={() => setTab('last')} />}
         </main>
       </div>
