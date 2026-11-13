@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { api, type Cohort, type SeniorRecord } from '../api'
 import { useToast } from '../toast'
+import SideSlot from '../SideSlot'
 
 const TYPES = ['meeting', 'event'] as const
 const TYPE_LABEL: Record<string, string> = { meeting: '회의록', event: '행사 문서', lesson: '교훈', decision: '결정' }
@@ -66,18 +67,27 @@ export default function Records({ onOpenDoc }: { onOpenDoc: (id: number, quote?:
       {error && <p className="error" role="alert">{error}</p>}
       <AddForm cohorts={cohorts} onSaved={load} />
       <InterviewBox cohorts={cohorts} events={events} state={interview} setState={setInterview} onSaved={load} />
-      <div className="filters">
-        <input type="search" name="q" aria-label="기록 검색" placeholder="제목·행사·본문에서 찾기" value={q} onChange={(e) => setQ(e.target.value)} />
-        <select aria-label="기수 거르기" value={cohortF} onChange={(e) => setCohortF(+e.target.value)}>
-          <option value={0}>모든 기수</option>
-          {cohorts.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
-        <select aria-label="종류 거르기" value={typeF} onChange={(e) => setTypeF(e.target.value)}>
-          <option value="">모든 종류</option>
-          {Object.entries(TYPE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-        </select>
-        <span className="muted">{shown.length}건</span>
-      </div>
+      <SideSlot>
+        <div className="side-block">
+          <label className="side-label" htmlFor="rec-q">기록 찾기</label>
+          <input id="rec-q" type="search" name="q" placeholder="제목·행사·본문에서 찾기" value={q} onChange={(e) => setQ(e.target.value)} />
+        </div>
+        <div className="side-block">
+          <label className="side-label" htmlFor="rec-cohort">기수</label>
+          <select id="rec-cohort" value={cohortF} onChange={(e) => setCohortF(+e.target.value)}>
+            <option value={0}>모든 기수</option>
+            {cohorts.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </div>
+        <div className="side-block">
+          <label className="side-label" htmlFor="rec-type">종류</label>
+          <select id="rec-type" value={typeF} onChange={(e) => setTypeF(e.target.value)}>
+            <option value="">모든 종류</option>
+            {Object.entries(TYPE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          </select>
+        </div>
+        <p className="side-count">조건에 맞는 기록 {shown.length}건</p>
+      </SideSlot>
       <div className="records">
         <div className="list">
           {shown.length === 0 && <p className="empty">조건에 맞는 기록이 없습니다.</p>}

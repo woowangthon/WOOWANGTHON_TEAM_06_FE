@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api, type Card, type Decision, type DecisionRow, type Lesson, type LastYear as Data, type SeniorRecord } from '../api'
 import { useToast } from '../toast'
+import SideSlot from '../SideSlot'
 
 const today = () => new Date().toISOString().slice(0, 10)
 const WEEK = ['일', '월', '화', '수', '목', '금', '토']
@@ -52,19 +53,21 @@ export default function LastYear({ onOpenRecord }: { onOpenRecord: (id: number, 
           {c ? `${c.getFullYear()}년 ${c.getMonth() + 1}월 ${c.getDate()}일` : '…'}
           {data && <small>앞뒤 {data.window_days}일</small>}
         </h2>
-        <div className="row" style={{ justifyContent: 'space-between' }}>
-          <label className="picker">
-            오늘로 볼 날짜 <input type="date" name="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} />
-          </label>
-          <dl className="stats" aria-label="쌓인 기록">
-            <div><dt>기록</dt><dd>{records.length}</dd></div>
-            <div><dt>행사</dt><dd>{events}</dd></div>
-            <div><dt>교훈</dt><dd>{records.filter((r) => r.type === 'lesson').length}</dd></div>
-            <div><dt>결정</dt><dd>{decisions.length}</dd></div>
-          </dl>
-        </div>
-        {data && <Ribbon center={data.center} windowDays={data.window_days} records={records} onPick={setDate} />}
       </div>
+
+      <SideSlot>
+        <div className="side-block">
+          <label className="side-label" htmlFor="ly-date">오늘로 볼 날짜</label>
+          <input id="ly-date" type="date" name="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} />
+        </div>
+        <dl className="stats" aria-label="쌓인 기록">
+          <div><dt>기록</dt><dd>{records.length}</dd></div>
+          <div><dt>행사</dt><dd>{events}</dd></div>
+          <div><dt>교훈</dt><dd>{records.filter((r) => r.type === 'lesson').length}</dd></div>
+          <div><dt>결정</dt><dd>{decisions.length}</dd></div>
+        </dl>
+        {data && <Ribbon center={data.center} windowDays={data.window_days} records={records} onPick={setDate} />}
+      </SideSlot>
 
       {error && <p className="error" role="alert">{error}</p>}
       {!data && !error && <div className="skeleton" aria-hidden="true"><i /><i /><i /></div>}
@@ -96,7 +99,7 @@ function Ribbon({ center, windowDays, records, onPick }: {
   const max = Math.max(1, ...counts)
 
   return (
-    <div>
+    <div className="ribbon-wrap">
       <div className="ribbon" role="group" aria-label={`${year}년 월별 기록 수. 누르면 그 달의 내년 같은 날로 이동`}>
         {counts.map((n, i) => {
           const inWin = new Date(year, i + 1, 0) >= lo && new Date(year, i, 1) <= hi
@@ -104,12 +107,12 @@ function Ribbon({ center, windowDays, records, onPick }: {
             <button key={i} className={inWin ? 'in' : ''} aria-label={`${i + 1}월 기록 ${n}건`}
               onClick={() => onPick(`${year + 1}-${String(i + 1).padStart(2, '0')}-15`)}>
               <span className="bar" style={{ height: 8 + (n / max) * 56 }} />
-              {i + 1}월
+              {i + 1}
             </button>
           )
         })}
       </div>
-      <p className="ribbon-note">{year}년 월별 기록 수입니다. 파란 달이 지금 보는 시기이며, 달을 누르면 그 시기로 이동합니다.</p>
+      <p className="ribbon-note">{year}년 월별 기록 수입니다. 밝은 막대가 지금 보는 시기이며, 누르면 그 달로 이동합니다.</p>
     </div>
   )
 }

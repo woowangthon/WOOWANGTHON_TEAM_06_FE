@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { api, type AskResult } from '../api'
 import { useToast } from '../toast'
+import SideSlot from '../SideSlot'
 
 const EXAMPLES = ['MT 때 시간이 왜 밀렸나요?', '정기총회는 어떻게 준비했나요?', 'LT 레크는 무엇을 했나요?']
 const RK = 'recent-questions'
@@ -36,15 +37,22 @@ export default function Ask({ onOpenRecord }: { onOpenRecord: (id: number, quote
           onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} />
         <button className="btn primary" onClick={() => submit()} disabled={busy}>{busy ? '찾는 중…' : '묻기'}</button>
       </div>
-      <div className="chips">
-        {EXAMPLES.map((x) => <button key={x} className="chip" onClick={() => submit(x)}>{x}</button>)}
-      </div>
-      {recent.length > 0 && (
-        <div className="chips recent" aria-label="최근 질문">
-          <span className="muted">최근 질문</span>
-          {recent.map((x) => <button key={x} className="chip" onClick={() => submit(x)}>{x}</button>)}
+      <SideSlot>
+        <div className="side-block">
+          <p className="side-label">예시 질문</p>
+          <div className="chips">
+            {EXAMPLES.map((x) => <button key={x} className="chip" onClick={() => submit(x)}>{x}</button>)}
+          </div>
         </div>
-      )}
+        {recent.length > 0 && (
+          <div className="side-block">
+            <p className="side-label">최근 질문</p>
+            <div className="chips">
+              {recent.map((x) => <button key={x} className="chip" onClick={() => submit(x)}>{x}</button>)}
+            </div>
+          </div>
+        )}
+      </SideSlot>
       {error && <p className="error" role="alert">{error}</p>}
       {busy && <div className="skeleton" aria-hidden="true"><i /><i /></div>}
       {res && !busy && (

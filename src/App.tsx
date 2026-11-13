@@ -54,10 +54,12 @@ export default function App() {
   return (
     <ToastProvider>
       <a className="skip" href="#main">본문으로 건너뛰기</a>
-      <header className="top">
-        <div className="top-in">
-          <h1 className="brand">졸업하지 않는 선배</h1>
-          <p className="tagline">지난 기수가 남긴 기록을 먼저 꺼내 주는 AI 선배</p>
+      <div className="shell">
+        <aside className="side">
+          <div className="side-head">
+            <h1 className="brand">졸업하지 않는 선배</h1>
+            <p className="tagline">지난 기수가 남긴 기록을 먼저 꺼내 주는 AI 선배</p>
+          </div>
           <nav aria-label="화면">
             {TABS.map(([k, label]) => (
               <button key={k} className={tab === k ? 'on' : ''} aria-current={tab === k ? 'page' : undefined} onClick={() => setTab(k)}>
@@ -65,14 +67,15 @@ export default function App() {
               </button>
             ))}
           </nav>
-        </div>
-      </header>
-      <main id="main">
-        {tab === 'last' && <LastYear onOpenRecord={openDoc} />}
-        {tab === 'ask' && <Ask onOpenRecord={openDoc} />}
-        {tab === 'records' && <Records onOpenDoc={openDoc} />}
-        {tab === 'decisions' && <Decisions onOpenDoc={openDoc} goLast={() => setTab('last')} />}
-      </main>
+          <div id="side-slot" className="side-slot" />
+        </aside>
+        <main id="main">
+          {tab === 'last' && <LastYear onOpenRecord={openDoc} />}
+          {tab === 'ask' && <Ask onOpenRecord={openDoc} />}
+          {tab === 'records' && <Records onOpenDoc={openDoc} />}
+          {tab === 'decisions' && <Decisions onOpenDoc={openDoc} goLast={() => setTab('last')} />}
+        </main>
+      </div>
       {doc && <DocModal id={doc.id} quote={doc.quote} onClose={() => setDoc(null)} />}
     </ToastProvider>
   )
