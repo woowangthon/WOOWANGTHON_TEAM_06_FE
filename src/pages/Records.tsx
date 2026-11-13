@@ -162,14 +162,14 @@ function AddForm({ cohorts, onSaved, open, onToggle }: { cohorts: Cohort[]; onSa
     try {
       if (!files.length) {
         const r = await api.addRecord({ ...f, cohort_id: cohort })
-        notify('기록을 저장했습니다.')
-        setMsg(`저장했습니다. ${r.record.occurred_on} 기록에서 일정 항목 ${r.timeline_items.length}개를 뽑았습니다${r.extraction === 'failed' ? ' (일정 추출에 실패해 기록만 저장했습니다)' : ''}.`)
+        notify('기록을 업로드했습니다.')
+        setMsg(`업로드했습니다. 구간 ${r.passages}개를 색인했고, ${r.record.occurred_on} 기록에서 일정 항목 ${r.timeline_items.length}개를 뽑았습니다${r.extraction === 'failed' ? ' (일정 추출에 실패해 기록만 보관했습니다)' : ''}.`)
         setF({ ...f, title: '', body: '' })
       } else {
-        let ok = 0, items = 0
+        let ok = 0, items = 0, passages = 0
         const bad: string[] = []
         for (const [i, file] of files.entries()) {
-          setProgress(`${i + 1}/${files.length} 올리는 중… ${file.name}`)
+          setProgress(`${i + 1}/${files.length} 텍스트 추출 → 구간 분할 → 색인 중… ${file.name}`)
           const fd = new FormData()
           fd.set('file', file); fd.set('cohort_id', String(cohort)); fd.set('type', f.type)
           fd.set('event_name', f.event_name)
@@ -177,12 +177,12 @@ function AddForm({ cohorts, onSaved, open, onToggle }: { cohorts: Cohort[]; onSa
           if (f.occurred_on) fd.set('occurred_on', f.occurred_on)
           try {
             const r = await api.upload(fd)
-            ok++; items += r.timeline_items.length
+            ok++; items += r.timeline_items.length; passages += r.passages
           } catch (e) { bad.push(`${file.name}: ${(e as Error).message}`) }
         }
         setFailures(bad)
-        setMsg(`${files.length}개 중 ${ok}개를 저장했고 일정 항목 ${items}개를 뽑았습니다${bad.length ? `. ${bad.length}개는 올리지 못했습니다` : ''}.`)
-        if (ok) notify(`기록 ${ok}건을 저장했습니다.`)
+        setMsg(`${files.length}개 중 ${ok}개를 업로드했고 구간 ${passages}개를 색인했습니다. 일정 항목은 ${items}개를 뽑았습니다${bad.length ? `. ${bad.length}개는 올리지 못했습니다` : ''}.`)
+        if (ok) notify(`기록 ${ok}건을 업로드하고 색인했습니다.`)
         setFiles(bad.length ? files.filter((x) => bad.some((m) => m.startsWith(x.name + ':'))) : [])
         setF({ ...f, title: '' })
       }
@@ -193,13 +193,13 @@ function AddForm({ cohorts, onSaved, open, onToggle }: { cohorts: Cohort[]; onSa
 
   return (
     <details className="panel" open={open} onToggle={(e) => onToggle(e.currentTarget.open)}>
-      <summary>기록 등록</summary>
+      <summary>기록 업로드</summary>
       <div className="form">
         <label className={`drop ${over ? 'over' : ''}`}
           onDragOver={(e) => { e.preventDefault(); setOver(true) }} onDragLeave={() => setOver(false)}
           onDrop={(e) => { e.preventDefault(); setOver(false); addFiles(e.dataTransfer.files) }}>
           <span>
-            {files.length === 0 && '파일을 올리면 텍스트를 읽어 기록으로 저장합니다. 여러 파일을 한꺼번에 선택하거나 끌어다 놓을 수 있습니다. (PDF, 한글 hwp·hwpx, docx, txt)'}
+            {files.length === 0 && '파일을 업로드하면 텍스트를 추출해 구간 단위로 색인하고, 아카이브에 보관합니다. 여러 파일을 한꺼번에 선택하거나 끌어다 놓을 수 있습니다. (PDF, 한글 hwp·hwpx, docx, txt)'}
             {files.length === 1 && `선택한 파일: ${files[0].name}`}
             {many && `선택한 파일 ${files.length}개`}
           </span>
@@ -226,7 +226,7 @@ function AddForm({ cohorts, onSaved, open, onToggle }: { cohorts: Cohort[]; onSa
             onChange={(e) => set('body', e.target.value)} />
         )}
         <div className="row">
-          <button className="btn primary" onClick={save} disabled={busy}>{busy ? '처리 중…' : files.length > 1 ? `${files.length}개 파일 저장하기` : '저장하고 일정 뽑기'}</button>
+          <button className="btn primary" onClick={save} disabled={busy}>{busy ? '색인 중…' : files.length > 1 ? `${files.length}개 파일 업로드하기` : '업로드하고 색인하기'}</button>
           {progress && <span className="muted" role="status">{progress}</span>}
         </div>
         {msg && <p className="notice" role="status">{msg}</p>}

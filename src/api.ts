@@ -13,7 +13,14 @@ export type DecisionRow = Decision & {
 }
 export type LastYear = { center: string; window_days: number; notice: string; cards: Card[] }
 export type Source = { record_id: number; title: string; quote: string; occurred_on: string }
-export type AskResult = { answer: string; sources: Source[] }
+export type AskResult = { answer: string; sources: Source[]; retrieved?: number }
+export type GraphNode = {
+  id: string; type: 'cohort' | 'event' | 'meeting' | 'event_doc' | 'lesson' | 'decision'; label: string
+  count?: number; record_id?: number; occurred_on?: string; event_name?: string; has_pdf?: boolean; cohort_id?: number
+}
+export type GraphEdge = { source: string; target: string; rel: string }
+export type Graph = { nodes: GraphNode[]; edges: GraphEdge[]; relations: Record<string, string> }
+export type Stats = { records: number; passages: number; events: number; cohorts: number; lessons: number; decisions: number; with_original: number; characters: number }
 export type Cohort = { id: number; name: string; year: number }
 export type SeniorRecord = {
   id: number; cohort_id: number; type: string; title: string; body: string; event_name: string; occurred_on: string
@@ -50,11 +57,13 @@ async function upload(form: FormData) {
   if (res.status === 401) throw new Unauthorized('접근 키가 필요합니다')
   const j = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(j.detail ?? `업로드에 실패했습니다 (${res.status})`)
-  return j as { record: SeniorRecord; timeline_items: unknown[]; extraction: string }
+  return j as { record: SeniorRecord; timeline_items: unknown[]; extraction: string; passages: number }
 }
 
 export const api = {
   upload,
+  graph: () => call<Graph>('/api/graph'),
+  stats: () => call<Stats>('/api/stats'),
   updateRecord: (id: number, b: Partial<Pick<SeniorRecord, 'title' | 'event_name' | 'occurred_on' | 'body'>>) =>
     call<SeniorRecord>(`/api/records/${id}`, { method: 'PATCH', body: JSON.stringify(b) }),
   deleteRecord: (id: number) => call<{ deleted: number }>(`/api/records/${id}`, { method: 'DELETE' }),
@@ -65,7 +74,7 @@ export const api = {
   records: () => call<SeniorRecord[]>('/api/records'),
   record: (id: number) => call<SeniorRecord>(`/api/records/${id}`),
   addRecord: (b: Omit<SeniorRecord, 'id' | 'has_pdf'>) =>
-    post<{ record: SeniorRecord; timeline_items: unknown[]; extraction: string }>('/api/records', b),
+    post<{ record: SeniorRecord; timeline_items: unknown[]; extraction: string; passages: number }>('/api/records', b),
   interviewNext: (cohort_id: number, event_name: string) =>
     post<{ question: string | null; done: boolean }>('/api/interviews/next', { cohort_id, event_name }),
   interviewAnswer: (cohort_id: number, event_name: string, question: string, answer: string) =>

@@ -201,3 +201,35 @@ main.gate { max-width: 440px; margin: 0 auto; padding-top: 18vh; }
   .hero { padding: 16px 16px; }
   .backdrop { padding: 0; } .modal { border-radius: 0; }
 }
+
+/* knowledge graph */
+.graph-wrap { position: relative; margin-top: 16px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; }
+.graph { width: 100%; height: min(66vh, 640px); display: block; touch-action: none; cursor: grab; background: radial-gradient(circle at 50% 40%, #fff, #f7f8fb); }
+.graph .edge { stroke: #cdd2dc; stroke-width: 1; }
+.graph .edge.dash { stroke-dasharray: 5 4; stroke: #9aa3b5; }
+.graph .edge.hot { stroke: var(--accent); stroke-width: 2; }
+.graph .node { cursor: pointer; }
+.graph .node:focus-visible { outline: none; }
+.graph .node:focus-visible circle { stroke: var(--accent); stroke-width: 3; }
+.graph .lbl { font-size: 12px; fill: #2a2f3a; paint-order: stroke; stroke: #fff; stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
+.graph .lbl.big { font-size: 15px; font-weight: 800; }
+.zoom { position: absolute; right: 12px; bottom: 12px; display: flex; gap: 6px; }
+.graph-detail { margin-top: 14px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 12px; padding: 16px 20px; }
+.graph-detail h3 { font-size: 1.05rem; font-weight: 800; line-height: 1.4; }
+.neigh { list-style: none; margin: 6px 0 0; padding: 0; font-size: .9rem; columns: 2; column-gap: 24px; }
+.neigh li { padding: 2px 0; break-inside: avoid; }
+.neigh em { font-style: normal; color: var(--ink-2); font-size: .78rem; margin-right: 6px; }
+.legend { display: flex; flex-direction: column; gap: 6px; }
+.legend-row { display: flex; align-items: center; gap: 8px; font-size: .9rem; cursor: pointer; }
+.legend-row input { width: auto; }
+.legend-row i { width: 11px; height: 11px; border-radius: 50%; flex: none; }
+.legend-row span { flex: 1; }
+.legend-row em { font-style: normal; color: var(--ink-2); font-size: .8rem; }
+.rels { margin: 0; padding-left: 18px; font-size: .86rem; color: var(--ink-2); }
+.kb { margin: 0 8px; padding: 12px 14px; border: 1px solid var(--rule); border-radius: 10px; background: #fff; font-size: .84rem; }
+.kb b { display: block; font-size: .8rem; color: var(--ink-2); font-weight: 500; margin-bottom: 6px; }
+.kb dl { display: grid; grid-template-columns: 1fr auto; gap: 3px 8px; margin: 0; }
+.kb dt { color: var(--ink-2); }
+.kb dd { margin: 0; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.retrieval { margin-top: 8px; font-size: .84rem; color: var(--ink-2); }
+@media (max-width: 900px) { .neigh { columns: 1; } .graph { height: 56vh; } .kb { margin: 0; } }

@@ -32,6 +32,9 @@ export default function Ask({ onOpenRecord }: { onOpenRecord: (id: number, quote
   return (
     <section>
       <h2 className="ask-h">지난 기수 기록에서<br />찾아서 알려드립니다</h2>
+      <p className="muted" style={{ marginTop: 6 }}>
+        업로드한 기록은 구간 단위로 색인되어 있습니다. 질문과 관련된 구간만 찾아서 그 내용을 근거로 답합니다.
+      </p>
       <div className="ask-box">
         <input placeholder="예: MT 때 시간이 왜 밀렸나요?" aria-label="질문" name="question" autoComplete="off" enterKeyHint="search" value={q}
           onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} />
@@ -58,6 +61,9 @@ export default function Ask({ onOpenRecord }: { onOpenRecord: (id: number, quote
       {res && !busy && (
         <div className="answer" aria-live="polite">
           <p className="lead">{lead}</p>
+          {res.retrieved !== undefined && (
+            <p className="retrieval">지식베이스에서 관련 구간 {res.retrieved}개를 찾았고, 그중 {res.sources.length}개를 근거로 사용했습니다.</p>
+          )}
           <div className="actions">
             <button className="btn" onClick={() => navigator.clipboard?.writeText(res.answer).then(() => notify('답변을 복사했습니다.'))}>답변 복사</button>
           </div>

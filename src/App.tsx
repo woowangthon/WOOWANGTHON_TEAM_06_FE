@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react'
-import { api, setKey, Unauthorized } from './api'
+import { api, setKey, Unauthorized, type Stats } from './api'
 import LastYear from './pages/LastYear'
 import Ask from './pages/Ask'
 import Records from './pages/Records'
 import Decisions from './pages/Decisions'
+import Graph from './pages/Graph'
 import DocModal from './DocModal'
 import { ToastProvider } from './toast'
 
 const TABS = [
   ['last', '작년 이맘때', 'clock'],
   ['ask', '선배에게 묻기', 'chat'],
-  ['records', '기록', 'inbox'],
+  ['records', '기록 아카이브', 'inbox'],
+  ['graph', '지식 그래프', 'graph'],
   ['decisions', '결정', 'check'],
 ] as const
 
@@ -19,6 +21,7 @@ const ICON: Record<string, string> = {
   chat: 'M4 5h16v11H9l-5 4V5z',
   inbox: 'M3 13l3-8h12l3 8v6H3v-6zm0 0h5a4 4 0 008 0h5',
   check: 'M5 12l4 4 10-10',
+  graph: 'M6 7a2 2 0 100-4 2 2 0 000 4zm12 0a2 2 0 100-4 2 2 0 000 4zM12 21a2 2 0 100-4 2 2 0 000 4zM6 7l6 10M18 7l-6 10M8 5h8',
 }
 type Tab = (typeof TABS)[number][0]
 
@@ -34,6 +37,7 @@ export default function App() {
   const [search, setSearch] = useState('')
   const [registerTick, setRegisterTick] = useState(0)
   const [counts, setCounts] = useState({ records: 0, decisions: 0 })
+  const [stats, setStats] = useState<Stats | null>(null)
   const [doc, setDoc] = useState<{ id: number; quote?: string } | null>(null)
 
   const setTab = (t: Tab) => { location.hash = `/${t}`; setTabState(t) }
@@ -43,7 +47,7 @@ export default function App() {
     return () => window.removeEventListener('hashchange', on)
   }, [])
   useEffect(() => {
-    Promise.all([api.records(), api.decisions()]).then(([r, d]) => setCounts({ records: r.length, decisions: d.length })).catch(() => {})
+    Promise.all([api.records(), api.decisions(), api.stats()]).then(([r, d, st]) => { setCounts({ records: r.length, decisions: d.length }); setStats(st) }).catch(() => {})
   }, [tab, doc])
   useEffect(() => {
     api.cohorts().catch((e) => e instanceof Unauthorized && setLocked(true))
@@ -80,7 +84,7 @@ export default function App() {
       <div className="shell">
         <aside className="side">
           <button className="compose" onClick={() => { setTab('records'); setRegisterTick((t) => t + 1) }}>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>기록 등록
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>기록 업로드
           </button>
           <nav aria-label="화면">
             {TABS.map(([k, label, icon]) => (
@@ -92,12 +96,24 @@ export default function App() {
               </button>
             ))}
           </nav>
+          {stats && (
+            <div className="kb" aria-label="지식베이스 현황">
+              <b>지식베이스 (RAG 색인)</b>
+              <dl>
+                <dt>문서</dt><dd>{stats.records}</dd>
+                <dt>색인된 구간</dt><dd>{stats.passages}</dd>
+                <dt>행사</dt><dd>{stats.events}</dd>
+                <dt>원본 보관</dt><dd>{stats.with_original}</dd>
+              </dl>
+            </div>
+          )}
           <div id="side-slot" className="side-slot" />
         </aside>
         <main id="main">
           {tab === 'last' && <LastYear onOpenRecord={openDoc} />}
           {tab === 'ask' && <Ask onOpenRecord={openDoc} />}
           {tab === 'records' && <Records onOpenDoc={openDoc} search={search} registerTick={registerTick} />}
+          {tab === 'graph' && <Graph onOpenDoc={openDoc} onSearch={(q) => { setSearch(q); setTab('records') }} />}
           {tab === 'decisions' && <Decisions onOpenDoc={openDoc} goLast={() => setTab('last')} />}
         </main>
       </div>
