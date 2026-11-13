@@ -15,6 +15,29 @@ const style = (n: GraphNode) => KINDS.find((k) => k.key === kindOf(n))!
 const W = 1000, H = 640
 const charge = (n: GraphNode) => (n.type === 'cohort' ? 6 : n.type === 'event' ? 3.5 : 1)
 
+/** Group nodes into connected components (one organisation = its cohorts, events, documents) and give each its own area. */
+function anchorsFor(g: GraphData) {
+  const parent = new Map<string, string>(g.nodes.map((n) => [n.id, n.id]))
+  const find = (x: string): string => (parent.get(x) === x ? x : (parent.set(x, find(parent.get(x)!)), parent.get(x)!))
+  g.edges.forEach((e) => parent.set(find(e.source), find(e.target)))
+  const comps = new Map<string, string[]>()
+  g.nodes.forEach((n) => { const r = find(n.id); comps.set(r, [...(comps.get(r) ?? []), n.id]) })
+  const list = [...comps.values()].sort((a, b) => b.length - a.length)
+  const total = list.reduce((t, c) => t + Math.sqrt(c.length), 0)
+  // biggest group in the middle, the others alternate to its left and right
+  const order: number[] = []
+  list.forEach((_, i) => (i === 0 ? order.push(i) : i % 2 ? order.unshift(i) : order.push(i)))
+  const widths = order.map((i) => (W * Math.sqrt(list[i].length)) / total)
+  const anchors = new Map<string, { x: number; y: number }>()
+  let x = 0
+  order.forEach((i, k) => {
+    const cx = x + widths[k] / 2
+    list[i].forEach((id) => anchors.set(id, { x: cx, y: H / 2 + (k % 2 ? 30 : -10) }))
+    x += widths[k]
+  })
+  return anchors
+}
+
 type Sim = { x: number; y: number; vx: number; vy: number; fixed?: boolean }
 
 export default function Graph({ onOpenDoc, onSearch }: { onOpenDoc: (id: number) => void; onSearch: (q: string) => void }) {
@@ -30,6 +53,7 @@ export default function Graph({ onOpenDoc, onSearch }: { onOpenDoc: (id: number)
   const raf = useRef(0)
   const loop = useRef<() => void>(() => {})
   const fitted = useRef(false)
+  const anchorRef = useRef<Map<string, { x: number; y: number }>>(new Map())
   const fit = () => {
     const ps = [...sim.current.values()]
     if (!ps.length) return
@@ -64,11 +88,13 @@ export default function Graph({ onOpenDoc, onSearch }: { onOpenDoc: (id: number)
   useEffect(() => {
     if (!data) return
     const s = sim.current
+    const anchors = anchorsFor(data)
+    anchorRef.current = anchors
     const parent = new Map<string, string>()
     data.edges.filter((e) => e.rel !== 'next_term').forEach((e) => parent.set(e.target, e.source))
     const cohorts = data.nodes.filter((n) => n.type === 'cohort')
     const seedAt = (n: GraphNode, i: number) => {
-      if (n.type === 'cohort') return { x: (W * (cohorts.indexOf(n) + 1)) / (cohorts.length + 1), y: H / 2 }
+      if (n.type === 'cohort') { const a = anchors.get(n.id)!; const k = cohorts.filter((c) => anchors.get(c.id)?.x === a.x); return { x: a.x + (k.indexOf(n) - (k.length - 1) / 2) * 160, y: a.y } }
       const par = parent.get(n.id)
       const base = par ? s.get(par) : undefined
       const a = i * 2.399963  // golden angle spreads siblings
@@ -94,7 +120,8 @@ export default function Graph({ onOpenDoc, onSearch }: { onOpenDoc: (id: number)
           const d = Math.sqrt(d2); dx /= d; dy /= d
           p.vx += dx * f; p.vy += dy * f; q.vx -= dx * f; q.vy -= dy * f
         }
-        p.vx += (W / 2 - p.x) * 0.0015 * a; p.vy += (H / 2 - p.y) * 0.003 * a
+        const t = anchorRef.current.get(nodes[i].id) ?? { x: W / 2, y: H / 2 }
+        p.vx += (t.x - p.x) * 0.012 * a; p.vy += (t.y - p.y) * 0.014 * a
       }
       for (const e of shown.edges) {
         const p = s.get(e.source), q = s.get(e.target)
