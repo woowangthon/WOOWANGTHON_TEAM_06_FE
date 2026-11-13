@@ -234,13 +234,17 @@ main.gate { max-width: 440px; margin: 0 auto; padding-top: 18vh; }
 .retrieval { margin-top: 8px; font-size: .84rem; color: var(--ink-2); }
 @media (max-width: 900px) { .neigh { columns: 1; } .graph { height: 56vh; } .kb { margin: 0; } }
 
-/* tables from documents */
-.md-wrap { overflow-x: auto; margin: 6px 0; }
+/* tables from documents: look like the original document (grey header, heavy rules, striped rows) */
+.md-wrap { overflow-x: auto; margin: 8px 0; }
 .md-p { white-space: pre-wrap; }
-.md { border-collapse: collapse; width: 100%; font-size: .88rem; font-weight: 400; }
-.md th, .md td { border: 1px solid var(--rule); padding: 6px 10px; text-align: left; vertical-align: top; font-weight: 400; }
-.md th { background: #f4f5f9; font-weight: 700; white-space: nowrap; }
-.md tbody tr:nth-child(even) td { background: #fafbfd; }
+.md { border-collapse: collapse; width: 100%; font-size: .95rem; font-variant-numeric: tabular-nums; border-top: 4px solid #5b6068; border-bottom: 4px solid #5b6068; }
+.md th, .md td { padding: 7px 12px; text-align: center; vertical-align: middle; border-left: 1px solid #aeb3bb; border-right: 1px solid #aeb3bb; border-top: 1px solid #aeb3bb; font-weight: 400; }
+.md th:first-child, .md td:first-child { border-left: 0; }
+.md th:last-child, .md td:last-child { border-right: 0; }
+.md th { background: #d9dadd; font-weight: 700; border-top: 0; border-bottom: 4px solid #5b6068; padding: 10px 12px; }
+.md tbody tr:nth-child(odd) td { background: #fff; }
+.md tbody tr:nth-child(even) td { background: #e2e3e6; }
+.md .red { color: #e03131; }
 .table-hits { margin-top: 14px; }
 .table-hits h2 { font-size: 1.05rem; font-weight: 800; margin-bottom: 8px; }
 .table-hits h2 b { color: var(--accent); margin-left: 4px; }

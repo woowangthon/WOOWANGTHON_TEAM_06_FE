@@ -1,4 +1,8 @@
-const bold = (t: string) => t.split(/\*\*(.+?)\*\*/g).map((x, i) => (i % 2 ? <strong key={i}>{x}</strong> : x))
+/** **bold** and {{r:red text}} (text that was red in the original document) */
+const bold = (t: string) =>
+  t.split(/(\{\{r:.*?\}\}|\*\*.+?\*\*)/g).map((x, i) =>
+    x.startsWith('{{r:') ? <span key={i} className="red">{x.slice(4, -2)}</span>
+      : x.startsWith('**') ? <strong key={i}>{x.slice(2, -2)}</strong> : x)
 
 /** Plain text with markdown tables ("| a | b |" lines) rendered as real tables. */
 export default function Md({ text, className }: { text: string; className?: string }) {
