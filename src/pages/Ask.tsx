@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { api, type AskResult } from '../api'
 import { useToast } from '../toast'
 import SideSlot from '../SideSlot'
+import Md from '../Md'
 
 const EXAMPLES = ['MT 때 시간이 왜 밀렸나요?', '정기총회는 어떻게 준비했나요?', 'LT 레크는 무엇을 했나요?']
 const RK = 'recent-questions'
@@ -60,7 +61,7 @@ export default function Ask({ onOpenRecord }: { onOpenRecord: (id: number, quote
       {busy && <div className="skeleton" aria-hidden="true"><i /><i /></div>}
       {res && !busy && (
         <div className="answer" aria-live="polite">
-          <p className="lead">{lead}</p>
+          <Md className="lead" text={lead ?? ''} />
           {res.retrieved !== undefined && (
             <p className="retrieval">지식베이스에서 관련 구간 {res.retrieved}개를 찾았고, 그중 {res.sources.length}개를 근거로 사용했습니다.</p>
           )}
@@ -72,7 +73,7 @@ export default function Ask({ onOpenRecord }: { onOpenRecord: (id: number, quote
               <p className="src-meta">
                 근거 기록 · <button className="link" onClick={() => onOpenRecord(s.record_id, s.quote)}>{s.occurred_on} {s.title}</button>
               </p>
-              <p className="quote"><mark>{s.quote}</mark></p>
+              {s.quote.startsWith('|') || s.quote.includes('\n|') ? <Md className="quote" text={s.quote} /> : <p className="quote"><mark>{s.quote}</mark></p>}
             </div>
           ))}
         </div>

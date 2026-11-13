@@ -19,6 +19,7 @@ export type GraphNode = {
   count?: number; record_id?: number; occurred_on?: string; event_name?: string; has_pdf?: boolean; cohort_id?: number
 }
 export type GraphEdge = { source: string; target: string; rel: string }
+export type TableHit = { record_id: number; title: string; event_name: string; occurred_on: string; caption: string; table: string; has_pdf: boolean; score: number }
 export type Graph = { nodes: GraphNode[]; edges: GraphEdge[]; relations: Record<string, string> }
 export type Stats = { records: number; passages: number; events: number; cohorts: number; lessons: number; decisions: number; with_original: number; characters: number }
 export type Cohort = { id: number; name: string; year: number }
@@ -62,6 +63,7 @@ async function upload(form: FormData) {
 
 export const api = {
   upload,
+  tables: (q: string) => call<TableHit[]>(`/api/tables?q=${encodeURIComponent(q)}`),
   graph: () => call<Graph>('/api/graph'),
   stats: () => call<Stats>('/api/stats'),
   updateRecord: (id: number, b: Partial<Pick<SeniorRecord, 'title' | 'event_name' | 'occurred_on' | 'body'>>) =>

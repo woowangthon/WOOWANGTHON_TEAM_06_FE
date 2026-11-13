@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { api, type Cohort, type SeniorRecord } from '../api'
+import { api, type Cohort, type SeniorRecord, type TableHit } from '../api'
+import Md from '../Md'
 import { useToast } from '../toast'
 import SideSlot from '../SideSlot'
 
@@ -23,16 +24,23 @@ export default function Records({ onOpenDoc, search, registerTick }: { onOpenDoc
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState({ title: '', event_name: '', occurred_on: '', body: '' })
   const [addOpen, setAddOpen] = useState(false)
+  const [tableHits, setTableHits] = useState<TableHit[]>([])
   const addRef = useRef<HTMLDivElement>(null)
   const q = search
+  useEffect(() => {  // tables (timetables, schedules...) that match the search show up right away
+    if (!search.trim()) { setTableHits([]); return }
+    const t = window.setTimeout(() => api.tables(search.trim()).then(setTableHits).catch(() => setTableHits([])), 250)
+    return () => window.clearTimeout(t)
+  }, [search])
   useEffect(() => {
     if (registerTick > 0) { setAddOpen(true); addRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }
   }, [registerTick])
   const [cohortF, setCohortF] = useState(0)
   const [typeF, setTypeF] = useState('')
+  const words = q.toLowerCase().split(/\s+/).filter((w) => w && !['타임테이블', '시간표', '일정표', '스케줄'].includes(w))
   const shown = list.filter((r) =>
     (!cohortF || r.cohort_id === cohortF) && (!typeF || r.type === typeF) &&
-    (!q.trim() || (r.title + ' ' + r.event_name + ' ' + r.body).toLowerCase().includes(q.trim().toLowerCase())))
+    words.every((w) => (r.title + ' ' + r.event_name + ' ' + r.body).toLowerCase().includes(w)))
   const events = [...new Map(list.filter((r) => r.event_name).map((r) => [`${r.cohort_id}|${r.event_name}`, { cohort: r.cohort_id, event: r.event_name }])).values()]
 
   const startEdit = () => {
@@ -81,6 +89,22 @@ export default function Records({ onOpenDoc, search, registerTick }: { onOpenDoc
         </div>
         <p className="side-count">조건에 맞는 기록 {shown.length}건</p>
       </SideSlot>
+      {tableHits.length > 0 && (
+        <div className="table-hits">
+          <h2>표 · 타임테이블 <b>{tableHits.length}</b></h2>
+          {tableHits.map((h, i) => (
+            <article key={h.record_id + ':' + i} className="tcard">
+              <header>
+                <span className="tagchip">{h.event_name || '기타'}</span>
+                <strong>{h.title}</strong>
+                <span className="muted">{h.occurred_on}{h.caption ? ` · ${h.caption}` : ''}</span>
+                <button className="btn" onClick={() => onOpenDoc(h.record_id)}>{h.has_pdf ? '원본 확인하기' : '원문 보기'}</button>
+              </header>
+              <Md text={h.table} />
+            </article>
+          ))}
+        </div>
+      )}
       <div className={`records ${detail ? 'with-detail' : ''}`}>
         <div className="mail-list">
           <div className="mail-toolbar">
@@ -126,7 +150,7 @@ export default function Records({ onOpenDoc, search, registerTick }: { onOpenDoc
                       원본 확인하기
                     </button>
                   )}
-                  <p className="body">{detail.body}</p>
+                  <Md className="body" text={detail.body} />
                   <div className="actions">
                     <button className="btn primary" onClick={() => onOpenDoc(detail.id)}>{detail.has_pdf ? '원본 문서 보기' : '크게 보기'}</button>
                     <button className="btn" onClick={startEdit}>수정</button>
