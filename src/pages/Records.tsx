@@ -116,7 +116,7 @@ export default function Records({ onOpenDoc }: { onOpenDoc: (id: number, quote?:
                   <h2>{detail.title}</h2>
                   {detail.has_pdf && (
                     <button className="preview" onClick={() => onOpenDoc(detail.id)}>
-                      원본 문서가 있다. 눌러서 원래 모습 그대로 보기
+                      원본 확인하기
                     </button>
                   )}
                   <p className="body">{detail.body}</p>
