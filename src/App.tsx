@@ -73,7 +73,7 @@ export default function App() {
       <a className="skip" href="#main">본문으로 건너뛰기</a>
       <header className="topbar">
         <button className="logo" onClick={() => setTab('last')} aria-label="처음으로">
-          <span className="logo-mark" aria-hidden="true">선</span>졸업하지 않는 선배
+          <span className="logo-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M2 9l10-5 10 5-10 5L2 9zM6 11.5V16c0 1.4 2.7 3 6 3s6-1.6 6-3v-4.5M22 9v6" /></svg></span>졸업하지 않는 선배
         </button>
         <form className="gsearch" role="search" onSubmit={(e) => { e.preventDefault(); setTab('records') }}>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4a7 7 0 105 11.9l4.4 4.4M11 4a7 7 0 010 14" /></svg>
