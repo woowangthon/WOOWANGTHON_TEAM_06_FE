@@ -44,14 +44,14 @@ export default function Records({ onOpenDoc }: { onOpenDoc: (id: number, quote?:
     if (!detail) return
     try {
       const r = await api.updateRecord(detail.id, draft)
-      setDetail(r); setEditing(false); load(); notify('기록을 수정했다.')
+      setDetail(r); setEditing(false); load(); notify('기록을 수정했습니다.')
     } catch (e) { setError((e as Error).message) }
   }
   const remove = async () => {
-    if (!detail || !window.confirm(`"${detail.title}" 기록을 삭제한다. 여기서 뽑은 일정과 이 일정에 남긴 결정도 함께 지워지고 되돌릴 수 없다.`)) return
+    if (!detail || !window.confirm(`"${detail.title}" 기록을 삭제합니다. 여기서 뽑은 일정과 이 일정에 남긴 결정도 함께 지워지며 되돌릴 수 없습니다.`)) return
     try {
       await api.deleteRecord(detail.id)
-      setDetail(null); load(); notify('기록을 삭제했다.')
+      setDetail(null); load(); notify('기록을 삭제했습니다.')
     } catch (e) { setError((e as Error).message) }
   }
 
@@ -80,7 +80,7 @@ export default function Records({ onOpenDoc }: { onOpenDoc: (id: number, quote?:
       </div>
       <div className="records">
         <div className="list">
-          {shown.length === 0 && <p className="empty">조건에 맞는 기록이 없다.</p>}
+          {shown.length === 0 && <p className="empty">조건에 맞는 기록이 없습니다.</p>}
           {ordered.map(([k, rs]) => (
             <div key={k}>
               <h3>{k}</h3>
@@ -103,7 +103,7 @@ export default function Records({ onOpenDoc }: { onOpenDoc: (id: number, quote?:
                     <input className="grow" aria-label="행사명" name="event_name" placeholder="행사명" value={draft.event_name} onChange={(e) => setDraft({ ...draft, event_name: e.target.value })} />
                     <input type="date" aria-label="날짜" name="occurred_on" value={draft.occurred_on} onChange={(e) => setDraft({ ...draft, occurred_on: e.target.value })} />
                   </div>
-                  <p className="muted">날짜를 바꾸면 이 기록에서 뽑은 일정도 같은 만큼 옮겨진다.</p>
+                  <p className="muted">날짜를 바꾸면 이 기록에서 뽑은 일정도 같은 만큼 옮겨집니다.</p>
                   <textarea rows={12} aria-label="본문" name="body" value={draft.body} onChange={(e) => setDraft({ ...draft, body: e.target.value })} />
                   <div className="row">
                     <button className="btn primary" onClick={saveEdit}>수정 저장</button>
@@ -129,7 +129,7 @@ export default function Records({ onOpenDoc }: { onOpenDoc: (id: number, quote?:
               )}
             </article>
           ) : (
-            <p className="empty">왼쪽에서 기록을 고르면 원문이 여기에 열린다.</p>
+            <p className="empty">왼쪽에서 기록을 고르면 원문이 여기에 열립니다.</p>
           )}
         </div>
       </div>
@@ -140,40 +140,66 @@ export default function Records({ onOpenDoc }: { onOpenDoc: (id: number, quote?:
 function AddForm({ cohorts, onSaved }: { cohorts: Cohort[]; onSaved: () => void }) {
   const notify = useToast()
   const [f, setF] = useState({ cohort_id: 0, type: 'meeting', title: '', body: '', event_name: '', occurred_on: '' })
-  const [file, setFile] = useState<File | null>(null)
+  const [files, setFiles] = useState<File[]>([])
   const [msg, setMsg] = useState('')
+  const [failures, setFailures] = useState<string[]>([])
+  const [progress, setProgress] = useState('')
   const [busy, setBusy] = useState(false)
+  const [over, setOver] = useState(false)
   const set = (k: string, v: string | number) => setF({ ...f, [k]: v })
   const cohort = f.cohort_id || cohorts[cohorts.length - 1]?.id
+  const many = files.length > 1
+
+  const addFiles = (list: FileList | null) => setFiles(list ? Array.from(list) : [])
 
   const save = async () => {
-    setMsg(''); setBusy(true)
+    setMsg(''); setFailures([]); setBusy(true)
     try {
-      let r
-      if (file) {
-        const fd = new FormData()
-        fd.set('file', file); fd.set('cohort_id', String(cohort)); fd.set('type', f.type)
-        fd.set('event_name', f.event_name); fd.set('title', f.title)
-        if (f.occurred_on) fd.set('occurred_on', f.occurred_on)
-        r = await api.upload(fd)
+      if (!files.length) {
+        const r = await api.addRecord({ ...f, cohort_id: cohort })
+        notify('기록을 저장했습니다.')
+        setMsg(`저장했습니다. ${r.record.occurred_on} 기록에서 일정 항목 ${r.timeline_items.length}개를 뽑았습니다${r.extraction === 'failed' ? ' (일정 추출에 실패해 기록만 저장했습니다)' : ''}.`)
+        setF({ ...f, title: '', body: '' })
       } else {
-        r = await api.addRecord({ ...f, cohort_id: cohort })
+        let ok = 0, items = 0
+        const bad: string[] = []
+        for (const [i, file] of files.entries()) {
+          setProgress(`${i + 1}/${files.length} 올리는 중… ${file.name}`)
+          const fd = new FormData()
+          fd.set('file', file); fd.set('cohort_id', String(cohort)); fd.set('type', f.type)
+          fd.set('event_name', f.event_name)
+          if (!many && f.title) fd.set('title', f.title)
+          if (f.occurred_on) fd.set('occurred_on', f.occurred_on)
+          try {
+            const r = await api.upload(fd)
+            ok++; items += r.timeline_items.length
+          } catch (e) { bad.push(`${file.name}: ${(e as Error).message}`) }
+        }
+        setFailures(bad)
+        setMsg(`${files.length}개 중 ${ok}개를 저장했고 일정 항목 ${items}개를 뽑았습니다${bad.length ? `. ${bad.length}개는 올리지 못했습니다` : ''}.`)
+        if (ok) notify(`기록 ${ok}건을 저장했습니다.`)
+        setFiles(bad.length ? files.filter((x) => bad.some((m) => m.startsWith(x.name + ':'))) : [])
+        setF({ ...f, title: '' })
       }
-      notify('기록을 저장했다.')
-      setMsg(`저장했다. ${r.record.occurred_on} 기록에서 일정 항목 ${r.timeline_items.length}개를 뽑았다${r.extraction === 'failed' ? ' (추출 실패: 기록만 저장)' : ''}.`)
-      setF({ ...f, title: '', body: '' }); setFile(null); onSaved()
+      onSaved()
     } catch (e) { setMsg((e as Error).message) }
-    setBusy(false)
+    setProgress(''); setBusy(false)
   }
 
   return (
     <details className="panel">
       <summary>기록 등록</summary>
       <div className="form">
-        <label className="drop">
-          <span>{file ? `선택한 파일: ${file.name}` : '파일을 올리면 글자를 읽어 기록으로 저장한다 (PDF, 한글 hwp·hwpx, docx, txt)'}</span>
-          <input type="file" name="file" accept=".pdf,.hwp,.hwpx,.docx,.txt,.md"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+        <label className={`drop ${over ? 'over' : ''}`}
+          onDragOver={(e) => { e.preventDefault(); setOver(true) }} onDragLeave={() => setOver(false)}
+          onDrop={(e) => { e.preventDefault(); setOver(false); addFiles(e.dataTransfer.files) }}>
+          <span>
+            {files.length === 0 && '파일을 올리면 텍스트를 읽어 기록으로 저장합니다. 여러 파일을 한꺼번에 선택하거나 끌어다 놓을 수 있습니다. (PDF, 한글 hwp·hwpx, docx, txt)'}
+            {files.length === 1 && `선택한 파일: ${files[0].name}`}
+            {many && `선택한 파일 ${files.length}개`}
+          </span>
+          <input type="file" name="file" multiple accept=".pdf,.hwp,.hwpx,.docx,.txt,.md" onChange={(e) => addFiles(e.target.files)} />
+          {many && <ul className="filelist">{files.map((x) => <li key={x.name + x.size}>{x.name}</li>)}</ul>}
         </label>
         <div className="row">
           <select aria-label="기수" name="cohort" value={cohort} onChange={(e) => set('cohort_id', +e.target.value)}>
@@ -183,16 +209,23 @@ function AddForm({ cohorts, onSaved }: { cohorts: Cohort[]; onSaved: () => void 
             {TYPES.map((t) => <option key={t} value={t}>{TYPE_LABEL[t]}</option>)}
           </select>
           <input type="date" aria-label="문서 날짜" name="occurred_on" value={f.occurred_on} onChange={(e) => set('occurred_on', e.target.value)} />
-          {file && <span className="muted">날짜를 비우면 문서에서 찾는다</span>}
+          {files.length > 0 && <span className="muted">날짜를 비우면 각 문서에서 찾습니다</span>}
         </div>
-        <input placeholder={file ? '제목 (비우면 파일 이름)' : '제목'} aria-label="제목" name="title" autoComplete="off" value={f.title} onChange={(e) => set('title', e.target.value)} />
+        {many && <p className="muted">여러 파일을 올릴 때는 기수, 종류, 행사명이 모든 파일에 똑같이 적용되고 제목은 파일 이름을 사용합니다.</p>}
+        {!many && (
+          <input placeholder={files.length ? '제목 (비우면 파일 이름을 사용합니다)' : '제목'} aria-label="제목" name="title" autoComplete="off" value={f.title} onChange={(e) => set('title', e.target.value)} />
+        )}
         <input placeholder="행사명 (예: 정기총회)" aria-label="행사명" name="event_name" autoComplete="off" value={f.event_name} onChange={(e) => set('event_name', e.target.value)} />
-        {!file && (
-          <textarea rows={5} aria-label="본문" name="body" placeholder="파일 대신 본문을 직접 붙여 넣어도 된다. 날짜는 2025-05-02 형식으로 적는다." value={f.body}
+        {files.length === 0 && (
+          <textarea rows={5} aria-label="본문" name="body" placeholder="파일 대신 본문을 직접 붙여 넣어도 됩니다. 날짜는 2025-05-02 형식으로 적어 주세요." value={f.body}
             onChange={(e) => set('body', e.target.value)} />
         )}
-        <div className="row"><button className="btn primary" onClick={save} disabled={busy}>{busy ? '읽는 중…' : '저장하고 일정 뽑기'}</button></div>
+        <div className="row">
+          <button className="btn primary" onClick={save} disabled={busy}>{busy ? '처리 중…' : files.length > 1 ? `${files.length}개 파일 저장하기` : '저장하고 일정 뽑기'}</button>
+          {progress && <span className="muted" role="status">{progress}</span>}
+        </div>
         {msg && <p className="notice" role="status">{msg}</p>}
+        {failures.length > 0 && <ul className="error filelist" role="alert">{failures.map((m) => <li key={m}>{m}</li>)}</ul>}
       </div>
     </details>
   )
@@ -217,7 +250,7 @@ function InterviewBox({ cohorts, events, state, setState, onSaved }: {
   const next = async (c: number, e: string) => {
     const r = await api.interviewNext(c, e)
     setState(r.question ? { cohort: c, event: e, question: r.question } : null)
-    if (!r.question) { setMsg('질문을 모두 마쳤다. 답변이 교훈 기록으로 남았다.'); notify('인터뷰를 마쳤다. 교훈이 기록에 남았다.'); setN(0) }
+    if (!r.question) { setMsg('질문을 모두 마쳤습니다. 답변이 교훈 기록으로 남았습니다.'); notify('인터뷰를 마쳤습니다. 교훈이 기록에 남았습니다.'); setN(0) }
   }
   const start = () => chosen && (setN(0), next(cid, chosen).catch((e) => setMsg(e.message)))
   const send = async () => {
@@ -234,7 +267,7 @@ function InterviewBox({ cohorts, events, state, setState, onSaved }: {
       <div className="form">
         {!state && (
           <>
-            <p className="muted">행사를 고르면 AI 선배가 후회한 점과 다음 기수에게 남길 말을 물어본다. 답은 교훈 기록으로 저장된다.</p>
+            <p className="muted">행사를 고르면 AI 선배가 후회한 점과 다음 기수에게 남길 말을 물어봅니다. 답변은 교훈 기록으로 저장됩니다.</p>
             <div className="row">
               <select aria-label="기수" name="cohort" value={cid} onChange={(e) => { setCohort(+e.target.value); setEvent('') }}>
                 {cohorts.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -242,7 +275,7 @@ function InterviewBox({ cohorts, events, state, setState, onSaved }: {
               <select aria-label="인터뷰할 행사" name="event" value={event || options[0] || ''} onChange={(e) => setEvent(e.target.value)} disabled={!options.length}>
                 {options.map((o) => <option key={o} value={o}>{o}</option>)}
               </select>
-              <input className="grow" aria-label="직접 입력한 행사명" name="event_custom" autoComplete="off" placeholder="목록에 없으면 직접 입력" value={custom} onChange={(e) => setCustom(e.target.value)} />
+              <input className="grow" aria-label="직접 입력한 행사명" name="event_custom" autoComplete="off" placeholder="목록에 없으면 직접 입력해 주세요" value={custom} onChange={(e) => setCustom(e.target.value)} />
               <button className="btn primary" onClick={start} disabled={!chosen}>인터뷰 시작</button>
             </div>
           </>

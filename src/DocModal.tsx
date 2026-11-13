@@ -64,7 +64,7 @@ export default function DocModal({ id, quote, onClose }: Props) {
           {rec && tab === 'pdf' && (pdfUrl ? <iframe title={rec.title} src={`${pdfUrl}#view=FitH`} /> : !error && <p className="empty">원본 문서를 불러오는 중…</p>)}
           {rec && tab === 'text' && (
             <div className="text-view">
-              {!rec.has_pdf && <p className="notice" style={{ marginTop: 0 }}>이 문서는 원본 파일을 화면에 띄울 수 없어서 추출한 텍스트로 보여준다.</p>}
+              {!rec.has_pdf && <p className="notice" style={{ marginTop: 0 }}>이 문서는 원본 파일을 화면에 띄울 수 없어서 추출한 텍스트로 보여드립니다.</p>}
               <p className="body">
                 {at >= 0 ? (
                   <>

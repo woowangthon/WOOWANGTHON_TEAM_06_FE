@@ -47,7 +47,7 @@ export default function LastYear({ onOpenRecord }: { onOpenRecord: (id: number, 
   return (
     <section>
       <div className="hero">
-        <p className="ask">1년 전 이맘때, 우리는 무엇을 했을까</p>
+        <p className="ask">1년 전 이맘때, 우리는 무엇을 했을까요?</p>
         <h2 className="hero-date">
           {c ? `${c.getFullYear()}년 ${c.getMonth() + 1}월 ${c.getDate()}일` : '…'}
           {data && <small>앞뒤 {data.window_days}일</small>}
@@ -74,7 +74,7 @@ export default function LastYear({ onOpenRecord }: { onOpenRecord: (id: number, 
           <Entry key={g.key} g={g} open={deciding === g.key}
             onToggle={() => setDeciding(deciding === g.key ? null : g.key)}
             onOpenRecord={onOpenRecord}
-            onSaved={() => { setDeciding(null); load(); api.decisions().then(setDecisions).catch(() => {}); notify('결정을 남겼다. 다음 기수가 이 카드에서 볼 수 있다.') }} />
+            onSaved={() => { setDeciding(null); load(); api.decisions().then(setDecisions).catch(() => {}); notify('결정을 남겼습니다. 다음 기수가 이 카드에서 볼 수 있습니다.') }} />
         ))}
       </ol>
     </section>
@@ -109,7 +109,7 @@ function Ribbon({ center, windowDays, records, onPick }: {
           )
         })}
       </div>
-      <p className="ribbon-note">{year}년 월별 기록 수. 파란 달이 지금 보는 시기다. 달을 누르면 그 시기로 간다.</p>
+      <p className="ribbon-note">{year}년 월별 기록 수입니다. 파란 달이 지금 보는 시기이며, 달을 누르면 그 시기로 이동합니다.</p>
     </div>
   )
 }
@@ -140,7 +140,7 @@ function Entry({ g, open, onToggle, onOpenRecord, onSaved }: {
         <span>{d.getFullYear()} · {WEEK[d.getDay()]}요일{last.done_on !== first.done_on ? ` · ~${md(last.done_on)}` : ''}</span>
       </div>
       <div className="what">
-        <h3>작년엔 이렇게 했다: {g.event}</h3>
+        <h3>작년에는 이렇게 했습니다: {g.event}</h3>
         <p className="tags">{g.cohort} · 문서 {g.cards.length}건</p>
         <ul className="docs">
           {g.cards.map((c) => (
@@ -154,7 +154,7 @@ function Entry({ g, open, onToggle, onOpenRecord, onSaved }: {
         {lessons.map((l) =>
           l.body.length > 300 ? (
             <p key={l.id} className="margin-note"><b>그때 남긴 평가 기록</b>
-              <button className="link" onClick={() => onOpenRecord(l.id)}>{l.title}</button> 평가회의에서 나온 후기와 개선점이 담겨 있다.
+              <button className="link" onClick={() => onOpenRecord(l.id)}>{l.title}</button> 평가회의에서 나온 후기와 개선점이 담겨 있습니다.
             </p>
           ) : (
             <p key={l.id} className="margin-note"><b>그때 남긴 교훈 · {l.title}</b>{l.body}</p>
@@ -170,8 +170,8 @@ function Entry({ g, open, onToggle, onOpenRecord, onSaved }: {
         </div>
         {open && (
           <div className="form">
-            <input placeholder="올해는 어떻게 할지" aria-label="올해 결정" name="decision" autoComplete="off" value={body} onChange={(e) => setBody(e.target.value)} />
-            <input placeholder="이유" aria-label="결정 이유" name="reason" autoComplete="off" value={reason} onChange={(e) => setReason(e.target.value)} />
+            <input placeholder="올해는 어떻게 할지 적어 주세요" aria-label="올해 결정" name="decision" autoComplete="off" value={body} onChange={(e) => setBody(e.target.value)} />
+            <input placeholder="이유를 적어 주세요" aria-label="결정 이유" name="reason" autoComplete="off" value={reason} onChange={(e) => setReason(e.target.value)} />
             <div className="row"><button className="btn primary" onClick={save}>결정 저장</button></div>
             {err && <p className="error" role="alert">{err}</p>}
           </div>

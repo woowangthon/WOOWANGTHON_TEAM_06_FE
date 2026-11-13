@@ -28,17 +28,17 @@ const auth = (): Record<string, string> => (getKey() ? { 'X-Access-Key': getKey(
 
 export async function fetchPdf(id: number): Promise<string> {
   const res = await fetch(`${BASE}/api/records/${id}/pdf`, { headers: auth() })
-  if (res.status === 401) throw new Unauthorized('접근 키가 필요하다')
-  if (!res.ok) throw new Error('원본 문서를 불러오지 못했다')
+  if (res.status === 401) throw new Unauthorized('접근 키가 필요합니다')
+  if (!res.ok) throw new Error('원본 문서를 불러오지 못했습니다')
   return URL.createObjectURL(await res.blob())
 }
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(BASE + path, { ...init, headers: { 'Content-Type': 'application/json', ...auth() } })
-  if (res.status === 401) throw new Unauthorized('접근 키가 필요하다')
+  if (res.status === 401) throw new Unauthorized('접근 키가 필요합니다')
   if (!res.ok) {
     const j = await res.json().catch(() => ({}))
-    throw new Error(j.detail ?? `요청 실패 (${res.status})`)
+    throw new Error(j.detail ?? `요청에 실패했습니다 (${res.status})`)
   }
   return res.json()
 }
@@ -47,9 +47,9 @@ const post = <T>(path: string, body: unknown) => call<T>(path, { method: 'POST',
 
 async function upload(form: FormData) {
   const res = await fetch(BASE + '/api/records/upload', { method: 'POST', body: form, headers: auth() })
-  if (res.status === 401) throw new Unauthorized('접근 키가 필요하다')
+  if (res.status === 401) throw new Unauthorized('접근 키가 필요합니다')
   const j = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(j.detail ?? `업로드 실패 (${res.status})`)
+  if (!res.ok) throw new Error(j.detail ?? `업로드에 실패했습니다 (${res.status})`)
   return j as { record: SeniorRecord; timeline_items: unknown[]; extraction: string }
 }
 

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { api, type AskResult } from '../api'
 import { useToast } from '../toast'
 
-const EXAMPLES = ['MT 때 시간이 왜 밀렸어?', '정기총회는 어떻게 준비했어?', 'LT 레크는 뭘 했어?']
+const EXAMPLES = ['MT 때 시간이 왜 밀렸나요?', '정기총회는 어떻게 준비했나요?', 'LT 레크는 무엇을 했나요?']
 const RK = 'recent-questions'
 const loadRecent = (): string[] => { try { return JSON.parse(localStorage.getItem(RK) ?? '[]') } catch { return [] } }
 
@@ -30,9 +30,9 @@ export default function Ask({ onOpenRecord }: { onOpenRecord: (id: number, quote
 
   return (
     <section>
-      <h2 className="ask-h">지난 기수 기록에서<br />찾아서 알려줄게</h2>
+      <h2 className="ask-h">지난 기수 기록에서<br />찾아서 알려드립니다</h2>
       <div className="ask-box">
-        <input placeholder="예: MT 때 시간이 왜 밀렸어?" aria-label="질문" name="question" autoComplete="off" enterKeyHint="search" value={q}
+        <input placeholder="예: MT 때 시간이 왜 밀렸나요?" aria-label="질문" name="question" autoComplete="off" enterKeyHint="search" value={q}
           onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} />
         <button className="btn primary" onClick={() => submit()} disabled={busy}>{busy ? '찾는 중…' : '묻기'}</button>
       </div>
@@ -51,7 +51,7 @@ export default function Ask({ onOpenRecord }: { onOpenRecord: (id: number, quote
         <div className="answer" aria-live="polite">
           <p className="lead">{lead}</p>
           <div className="actions">
-            <button className="btn" onClick={() => navigator.clipboard?.writeText(res.answer).then(() => notify('답변을 복사했다.'))}>답변 복사</button>
+            <button className="btn" onClick={() => navigator.clipboard?.writeText(res.answer).then(() => notify('답변을 복사했습니다.'))}>답변 복사</button>
           </div>
           {res.sources.map((s) => (
             <div key={s.record_id} className="src">

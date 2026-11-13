@@ -13,11 +13,11 @@ export default function Decisions({ onOpenDoc, goLast }: { onOpenDoc: (id: numbe
 
   return (
     <section>
-      <h2 className="ask-h">우리가 내린 결정은<br />다음 기수의 근거가 된다</h2>
+      <h2 className="ask-h">우리가 내린 결정은<br />다음 기수의 근거가 됩니다</h2>
       {error && <p className="error" role="alert">{error}</p>}
       {rows && rows.length === 0 && (
         <div className="empty">
-          <p>아직 남긴 결정이 없다.</p>
+          <p>아직 남긴 결정이 없습니다.</p>
           <p style={{ marginTop: 10 }}><button className="btn primary" onClick={goLast}>작년 이맘때에서 결정 남기기</button></p>
         </div>
       )}
